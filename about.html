@@ -94,7 +94,9 @@
                 }
             }
         }
-    }catch(_e){}</script></head><body class="bg-background text-on-background font-body-md antialiased flex flex-col min-h-screen">
+    }catch(_e){}</script>
+<link href="assets/site.css" rel="stylesheet">
+</head><body class="bg-background text-on-background font-body-md antialiased flex flex-col min-h-screen">
 <!-- TopNavBar -->
 <header class="bg-surface dark:bg-surface-dim sticky top-0 w-full border-b border-outline-variant z-50">
 <div class="flex justify-between items-center h-20 px-md md:px-lg max-w-container-max mx-auto">
@@ -115,36 +117,103 @@
 </div>
 </div>
 </header>
+<style>
+@keyframes story-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+.story-year-badge { animation: story-float 5s ease-in-out infinite; }
+.value-card {
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s ease, border-color 0.35s ease;
+}
+.value-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 16px 40px rgba(0, 31, 80, 0.1);
+  border-color: rgba(254, 128, 21, 0.35);
+}
+.value-card:hover .value-icon {
+  background: #fe8015;
+  color: #fff;
+  transform: scale(1.08);
+}
+.value-icon {
+  transition: background 0.3s ease, color 0.3s ease, transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.value-card .value-bar {
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.value-card:hover .value-bar { transform: scaleX(1); }
+@media (prefers-reduced-motion: reduce) {
+  .story-year-badge { animation: none; }
+  .value-card, .value-icon, .value-card .value-bar { transition: none; }
+  .value-card:hover { transform: none; }
+}
+</style>
 <main class="flex-grow">
 <!-- 3. Our Story -->
-<section class="py-xxl px-lg max-w-container-max mx-auto">
+<section class="relative py-xxl px-lg overflow-hidden">
+<div class="absolute inset-0 pointer-events-none" style="background: linear-gradient(135deg, #f9f9f7 0%, #f4f4f2 45%, rgba(217, 226, 255, 0.35) 100%);"></div>
+<div class="absolute -right-24 top-10 w-72 h-72 rounded-full pointer-events-none opacity-40" style="background: radial-gradient(circle, rgba(254,128,21,0.18) 0%, transparent 70%);"></div>
+<div class="max-w-container-max mx-auto relative">
 <div class="grid grid-cols-1 md:grid-cols-12 gap-xl items-center">
-<div class="md:col-span-5 relative group rounded-xl overflow-hidden shadow-[0px_4px_12px_rgba(20,32,51,0.05)] border border-outline-variant">
-<img alt="Community gathering" class="w-full h-[400px] object-cover transition-transform duration-500 group-hover:scale-105" data-alt="A warm, candid photograph of a diverse, multi-generational community group standing together outdoors under bright, natural daylight. The group includes elderly members and young adults, reflecting unity and established trust. The setting is a serene, well-maintained community park with soft green foliage in the background. The aesthetic is modern, professional, and inviting, matching a UI design that prioritizes accessibility, dignified structure, and a color palette rooted in deep navy and warm orange accents. The lighting is soft and flattering." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCZgdHyKmCGz_o5KBJdu72GMMYkqxSWbeacN93sW4OWqsVfN-VugIhVA-DOXqT5al9xv9Etd-ihdRePfHEVWqz5DIw2XCTMdJ2nKwMj5ICkYoFcuMSeKxVq3Zrq4c5Kd1tSXgEC_fOROvHDW5ZC-Ox6fRIi28TYA05fqO7RagIVRgfP52QFokujjOAaYh0rSP8NkX2qc1Hov4lu07GLI3ruEJnZEVlCcy1lblMrSu4hQg4zOgVKcbdzMg">
+<div class="md:col-span-5 relative story-reveal">
+<div class="absolute -inset-3 rounded-2xl bg-primary/5 -rotate-2 pointer-events-none"></div>
+<div class="relative group rounded-xl overflow-hidden shadow-[0_20px_50px_rgba(0,31,80,0.12)]">
+<img alt="Community gathering" class="w-full h-[420px] object-cover transition-transform duration-700 ease-out group-hover:scale-105" data-alt="A warm, candid photograph of a diverse, multi-generational community group standing together outdoors under bright, natural daylight. The group includes elderly members and young adults, reflecting unity and established trust. The setting is a serene, well-maintained community park with soft green foliage in the background. The aesthetic is modern, professional, and inviting, matching a UI design that prioritizes accessibility, dignified structure, and a color palette rooted in deep navy and warm orange accents. The lighting is soft and flattering." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCZgdHyKmCGz_o5KBJdu72GMMYkqxSWbeacN93sW4OWqsVfN-VugIhVA-DOXqT5al9xv9Etd-ihdRePfHEVWqz5DIw2XCTMdJ2nKwMj5ICkYoFcuMSeKxVq3Zrq4c5Kd1tSXgEC_fOROvHDW5ZC-Ox6fRIi28TYA05fqO7RagIVRgfP52QFokujjOAaYh0rSP8NkX2qc1Hov4lu07GLI3ruEJnZEVlCcy1lblMrSu4hQg4zOgVKcbdzMg">
+<div class="absolute inset-0 bg-gradient-to-t from-primary/50 via-transparent to-transparent opacity-80"></div>
+<div class="absolute bottom-0 left-0 right-0 p-lg flex items-end justify-between gap-md">
+<p class="font-label-bold text-label-bold text-white/95">Together since day one</p>
+<div class="story-year-badge shrink-0 bg-secondary-container text-on-primary font-h3 text-h3 px-md py-sm rounded-lg shadow-lg">2012</div>
 </div>
-<div class="md:col-span-7 space-y-md"><h2 class="font-h2 text-h2-mobile md:text-h2 text-primary">Our Story</h2><p class="font-body-md text-body-md text-on-surface-variant">Alubonets Self-Help Group was founded in 2012. The idea for the group arose during a pivotal moment of family need that brought several family members together to offer their collective support. This gathering highlighted that many relatives did not know one another or where other family members lived. This experience inspired the family to establish a group through which members could meet regularly, support one another, and strengthen their family relationships.</p><div class="mt-xl"><h3 class="font-h3 text-h3 text-primary mb-sm">The Meaning Behind Our Name</h3><p class="font-body-md text-body-md text-on-surface-variant">The name 'Alubonets' is a proud tribute to the descendants of the late Alubokho. It serves as a living symbol of our shared identity, heritage, and the family lineage that connects the various branches of the wider Alubokho family across generations.</p></div></div>
+</div>
+</div>
+<div class="md:col-span-7 space-y-lg">
+<div class="story-reveal story-reveal-delay-1">
+<p class="font-label-bold text-label-bold text-secondary uppercase tracking-[0.14em] mb-sm">Our beginnings</p>
+<h2 class="font-h2 text-h2-mobile md:text-h2 text-primary mb-md">Our Story</h2>
+<div class="h-1 w-16 bg-secondary-container rounded-full story-accent-line mb-md"></div>
+<p class="font-body-lg text-body-lg text-on-surface-variant">Alubonets Self-Help Group was founded in 2012. The idea for the group arose during a pivotal moment of family need that brought several family members together to offer their collective support.</p>
+<p class="font-body-md text-body-md text-on-surface-variant mt-md">This gathering highlighted that many relatives did not know one another or where other family members lived. That moment inspired a lasting group where members could meet regularly, support one another, and strengthen family relationships.</p>
+</div>
+<div class="story-reveal story-reveal-delay-2 relative pl-lg border-l-4 border-secondary-container bg-surface-container-lowest/80 rounded-r-xl py-lg pr-lg shadow-[0_8px_30px_rgba(0,31,80,0.06)]">
+<span class="material-symbols-outlined text-secondary-container absolute -left-[18px] top-lg bg-surface rounded-full p-xs text-[22px]" style="font-variation-settings: 'FILL' 1;">diversity_3</span>
+<h3 class="font-h3 text-h3 text-primary mb-sm">The Meaning Behind Our Name</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">The name <span class="font-semibold text-primary">Alubonets</span> is a proud tribute to the descendants of the late Alubokho. It is a living symbol of our shared identity, heritage, and the family lineage that connects every branch of the wider Alubokho family across generations.</p>
+</div>
+</div>
+</div>
 </div>
 </section>
 <!-- 4. Vision & Values -->
-<section class="bg-surface-container-low py-xxl px-lg">
-<div class="max-w-container-max mx-auto">
-<div class="text-center mb-xl">
-<h2 class="font-h2 text-h2-mobile md:text-h2 text-primary mb-sm">Vision &amp; Values</h2>
-<p class="font-body-md text-body-md text-on-surface-variant">One Family, One Vision, Endless Possibilities. These are the pillars that guide our collective journey.</p>
+<section class="relative py-xxl px-lg overflow-hidden">
+<div class="absolute inset-0 bg-primary pointer-events-none"></div>
+<div class="absolute inset-0 pointer-events-none opacity-[0.07]" style="background-image: radial-gradient(circle at 1.5px 1.5px, white 1px, transparent 0); background-size: 22px 22px;"></div>
+<div class="absolute -left-20 bottom-0 w-80 h-80 rounded-full pointer-events-none" style="background: radial-gradient(circle, rgba(254,128,21,0.25) 0%, transparent 70%);"></div>
+<div class="absolute -right-16 top-0 w-64 h-64 rounded-full pointer-events-none" style="background: radial-gradient(circle, rgba(176,198,255,0.2) 0%, transparent 70%);"></div>
+<div class="max-w-container-max mx-auto relative">
+<div class="text-center mb-xl max-w-2xl mx-auto story-reveal">
+<p class="font-label-bold text-label-bold text-secondary-container uppercase tracking-[0.14em] mb-sm">What guides us</p>
+<h2 class="font-h2 text-h2-mobile md:text-h2 text-on-primary mb-md">Vision &amp; Values</h2>
+<p class="font-body-lg text-body-lg text-on-primary/75 italic">“One Family, One Vision, Endless Possibilities.”</p>
+<p class="font-body-md text-body-md text-on-primary/60 mt-sm">These are the pillars that guide our collective journey.</p>
 </div>
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-lg">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-lg max-w-2xl mx-auto">
 <!-- Card 1 -->
-<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-lg hover:shadow-[0px_4px_12px_rgba(20,32,51,0.05)] transition-shadow duration-300"><div class="bg-primary-fixed/30 w-12 h-12 rounded-full flex items-center justify-center mb-md text-primary"><span class="material-symbols-outlined">handshake</span></div><h3 class="font-h3 text-h3 text-primary mb-xs">Unity &amp; Identity</h3><p class="font-body-md text-body-md text-on-surface-variant">Strengthening family bonds across generations.</p></div>
+<article class="value-card group relative bg-surface-container-lowest rounded-xl p-lg border border-white/10 overflow-hidden story-reveal story-reveal-delay-1">
+<div class="value-bar absolute top-0 left-0 right-0 h-1 bg-secondary-container"></div>
+<div class="value-icon bg-primary-fixed w-12 h-12 rounded-xl flex items-center justify-center mb-md text-primary"><span class="material-symbols-outlined">handshake</span></div>
+<h3 class="font-h3 text-[20px] leading-snug text-primary mb-xs">Unity &amp; Identity</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">Strengthening family bonds across generations.</p>
+</article>
 <!-- Card 2 -->
-<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-lg hover:shadow-[0px_4px_12px_rgba(20,32,51,0.05)] transition-shadow duration-300"><div class="bg-primary-fixed/30 w-12 h-12 rounded-full flex items-center justify-center mb-md text-primary"><span class="material-symbols-outlined">account_balance</span></div><h3 class="font-h3 text-h3 text-primary mb-xs">Governance &amp; Accountability</h3><p class="font-body-md text-body-md text-on-surface-variant">Promoting transparent leadership and responsible management.</p></div>
-<!-- Card 3 -->
-<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-lg hover:shadow-[0px_4px_12px_rgba(20,32,51,0.05)] transition-shadow duration-300"><div class="bg-primary-fixed/30 w-12 h-12 rounded-full flex items-center justify-center mb-md text-primary"><span class="material-symbols-outlined">devices</span></div><h3 class="font-h3 text-h3 text-primary mb-xs">Digital Transformation</h3><p class="font-body-md text-body-md text-on-surface-variant">Embracing modern systems that improve communication and record keeping.</p></div>
-<!-- Card 4 -->
-<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-lg hover:shadow-[0px_4px_12px_rgba(20,32,51,0.05)] transition-shadow duration-300"><div class="bg-primary-fixed/30 w-12 h-12 rounded-full flex items-center justify-center mb-md text-primary"><span class="material-symbols-outlined">volunteer_activism</span></div><h3 class="font-h3 text-h3 text-primary mb-xs">Welfare Support</h3><p class="font-body-md text-body-md text-on-surface-variant">Supporting members during important life events and times of need.</p></div>
-<!-- Card 5 -->
-<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-lg hover:shadow-[0px_4px_12px_rgba(20,32,51,0.05)] transition-shadow duration-300"><div class="bg-primary-fixed/30 w-12 h-12 rounded-full flex items-center justify-center mb-md text-primary"><span class="material-symbols-outlined">trending_up</span></div><h3 class="font-h3 text-h3 text-primary mb-xs">Economic Empowerment</h3><p class="font-body-md text-body-md text-on-surface-variant">Creating opportunities for financial growth and development.</p></div>
-<!-- Card 6 -->
-<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-lg hover:shadow-[0px_4px_12px_rgba(20,32,51,0.05)] transition-shadow duration-300"><div class="bg-primary-fixed/30 w-12 h-12 rounded-full flex items-center justify-center mb-md text-primary"><span class="material-symbols-outlined">balance</span></div><h3 class="font-h3 text-h3 text-primary mb-xs">Inclusivity &amp; Conflict Resolution</h3><p class="font-body-md text-body-md text-on-surface-variant">Encouraging participation, respect and peaceful coexistence.</p></div>
+<article class="value-card group relative bg-surface-container-lowest rounded-xl p-lg border border-white/10 overflow-hidden story-reveal story-reveal-delay-1">
+<div class="value-bar absolute top-0 left-0 right-0 h-1 bg-secondary-container"></div>
+<div class="value-icon bg-primary-fixed w-12 h-12 rounded-xl flex items-center justify-center mb-md text-primary"><span class="material-symbols-outlined">account_balance</span></div>
+<h3 class="font-h3 text-[20px] leading-snug text-primary mb-xs">Governance &amp; Accountability</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">Promoting transparent leadership and responsible management.</p>
+</article>
 </div>
 </div>
 </section>
@@ -191,7 +260,7 @@
 </div>
 </section>
 <!-- 6. Motto -->
-<section class="bg-primary text-on-primary py-xxl px-lg relative overflow-hidden">
+<section class="site-motto-band bg-primary text-on-primary py-xxl px-lg relative overflow-visible">
 <!-- Subtle background pattern using Tailwind utility -->
 <div class="absolute inset-0 opacity-5 pointer-events-none" style="background-image: radial-gradient(circle at 2px 2px, white 1px, transparent 0); background-size: 24px 24px;"></div>
 <div class="max-w-3xl mx-auto text-center relative z-10">
@@ -200,14 +269,14 @@
 </section>
 </main>
 <!-- Footer -->
-<footer class="bg-primary dark:bg-primary-container text-on-primary dark:text-on-primary-container font-body-md text-body-md w-full mt-auto">
+<footer class="bg-primary dark:bg-primary-container text-on-primary dark:text-on-primary-container font-body-md text-body-md w-full mt-auto site-footer">
 <div class="max-w-container-max mx-auto px-md md:px-lg py-lg md:py-xxl">
 <!-- Footer Grid: Responsive Layout -->
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-lg mb-xl">
 <!-- Column 1: Brand & Mission -->
 <div class="col-span-1">
 <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuCnSzS3JcCrGOIYnlA_odPQfW_EPHR1u48LU3KS766KoVD3igIme0EQq0vqNQG3PooaTM2bQqbTmk0RImwZPTDU2sdNN8x8Ewm1oKnJaxZir_KAlNdgRMYz9EyDkfErXWWvZg0JTfdI-WD5J0fK-SLORJPmc2el4H64y1qLg_W15yfg59vO479BZ_O3blOrXFo_F3Ht3cNs44g0jJDLYDrGYmavEdni6HS_DFgt8SvyLJk8W-BIPKiPF2oGxWdN9ncMpZo" alt="Alubonets SHG Logo" class="h-16 w-auto object-contain mb-md">
-<p class="text-on-primary/80 dark:text-on-primary-container/80 text-sm leading-relaxed">One Family, One Vision, Endless Possibilities.</p>
+<p class="footer-brand-name">Alubonets</p>
 <p class="text-on-primary/80 dark:text-on-primary-container/80 text-sm mt-md">Butere, Kakamega County, Kenya.</p>
 </div>
 
@@ -248,7 +317,7 @@
 </div>
 
 <!-- Divider -->
-<div class="border-t border-on-primary/10 dark:border-on-primary-container/10 pt-lg">
+<div class="pt-lg">
 <!-- Footer Bottom: Copyright & Legal -->
 <div class="flex flex-col sm:flex-row items-center justify-between gap-md text-sm">
 <p class="text-on-primary/60 dark:text-on-primary-container/60">&#169; 2026 Alubonets Self-Help Group. All rights reserved.</p>
@@ -263,66 +332,57 @@
 
 <!-- Auth Modal -->
 <div id="authModal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-md" onclick="closeAuthModal(event)">
-<div class="bg-surface rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden flex flex-col max-h-[90vh]" onclick="event.stopPropagation()">
-<!-- â”€â”€ Primary branded header â”€â”€ -->
-<div class="bg-primary px-lg pt-lg pb-md flex-shrink-0">
-<div class="flex items-start justify-between mb-md">
-<div>
-<h2 class="font-h3 text-h3 text-on-primary">Alubonets Account</h2>
-<p class="font-caption text-caption mt-xs" style="color:rgba(176,198,255,0.65)">Self-Help Group Member Portal</p>
+<div class="bg-surface rounded-2xl shadow-2xl w-full max-w-md" onclick="event.stopPropagation()">
+<!-- Close -->
+<div class="flex justify-end px-md pt-md pb-0">
+<button onclick="closeAuthModal()" class="text-on-surface-variant hover:text-on-surface p-xs rounded-lg hover:bg-surface-container-high transition-colors"><span class="material-symbols-outlined text-[22px]">close</span></button>
 </div>
-<button onclick="closeAuthModal()" class="p-xs rounded-lg hover:bg-white/10 transition-colors ml-md flex-shrink-0 mt-xs" style="color:rgba(176,198,255,0.7)"><span class="material-symbols-outlined text-[22px]">close</span></button>
-</div>
-<div class="flex gap-xs">
-<button onclick="switchAuthTab('signin')" id="tab-signin" class="tab-btn">Sign In</button>
-<button onclick="switchAuthTab('signup')" id="tab-signup" class="tab-btn">Sign Up</button>
-<button onclick="switchAuthTab('forgot')" id="tab-forgot" class="tab-btn">Forgot?</button>
-</div>
-</div>
-<!-- â”€â”€ Scrollable content â”€â”€ -->
-<div class="p-lg overflow-y-auto flex-1">
+<!-- Content -->
+<div class="px-lg pb-lg pt-sm">
 <!-- Sign In -->
 <div id="signin-content" class="auth-tab-content flex flex-col gap-md">
-<button type="button" class="w-full flex items-center justify-center gap-sm py-[9px] rounded-lg border border-outline-variant bg-white hover:bg-surface-container-low transition-colors font-label-bold text-[13px] text-on-surface shadow-sm">
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="18" height="18"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
-Continue with Google
-</button>
-<div class="flex items-center gap-md"><div class="flex-1 h-px bg-outline-variant"></div><span class="text-[12px] text-on-surface-variant font-caption">or</span><div class="flex-1 h-px bg-outline-variant"></div></div>
-<div class="flex flex-col gap-xs"><label class="font-label-bold text-label-bold text-on-surface text-[13px]">Email</label><input type="email" placeholder="your@email.com" class="border border-outline-variant rounded-lg px-md py-[9px] font-body-md text-[14px] focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary bg-surface w-full mt-xs"></div>
-<div class="flex flex-col gap-xs"><label class="font-label-bold text-label-bold text-on-surface text-[13px]">Password</label><input type="password" placeholder="&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;" class="border border-outline-variant rounded-lg px-md py-[9px] font-body-md text-[14px] focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary bg-surface w-full mt-xs"></div>
-<button type="button" class="bg-secondary text-on-secondary font-label-bold text-label-bold py-[10px] rounded-lg hover:opacity-90 active:scale-95 transition-all min-h-[42px] w-full mt-xs">Sign In</button>
-<p class="text-center text-[13px] text-on-surface-variant">No account? <button type="button" onclick="switchAuthTab('signup')" class="text-secondary hover:underline font-bold">Sign Up</button></p>
+<h2 class="font-h3 text-h3 text-primary">Sign In</h2>
+<div class="flex flex-col gap-xs"><label class="font-label-bold text-[13px] text-on-surface">Email</label><input type="email" placeholder="your@email.com" class="border border-outline-variant rounded-lg px-md py-[9px] text-[14px] focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary bg-surface w-full mt-xs"></div>
+<div class="flex flex-col gap-xs"><label class="font-label-bold text-[13px] text-on-surface">Password</label><input type="password" placeholder="&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;" class="border border-outline-variant rounded-lg px-md py-[9px] text-[14px] focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary bg-surface w-full mt-xs"></div>
+<button type="button" class="bg-secondary-container text-on-secondary font-label-bold text-label-bold py-[10px] rounded-lg hover:opacity-90 active:scale-95 transition-all min-h-[42px] w-full">Sign In</button>
+<div class="flex items-center justify-between text-[12px] text-on-surface-variant">
+<button type="button" onclick="switchAuthTab('forgot')" class="hover:text-secondary-container transition-colors">Forgot password?</button>
+<button type="button" onclick="switchAuthTab('signup')" class="hover:text-on-surface transition-colors">No account? <span class="text-secondary-container font-semibold">Create account</span></button>
+</div>
 </div>
 <!-- Sign Up -->
-<div id="signup-content" class="auth-tab-content hidden flex flex-col gap-sm">
-<button type="button" class="w-full flex items-center justify-center gap-sm py-[9px] rounded-lg border border-outline-variant bg-white hover:bg-surface-container-low transition-colors font-label-bold text-[13px] text-on-surface shadow-sm">
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="18" height="18"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
-Sign up with Google
-</button>
-<div class="flex items-center gap-md"><div class="flex-1 h-px bg-outline-variant"></div><span class="text-[12px] text-on-surface-variant font-caption">or</span><div class="flex-1 h-px bg-outline-variant"></div></div>
-<div class="flex flex-col gap-xs"><label class="font-label-bold text-label-bold text-on-surface text-[13px]">Full Name</label><input type="text" placeholder="Your Name" class="border border-outline-variant rounded-lg px-md py-[9px] font-body-md text-[14px] focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary bg-surface w-full mt-xs"></div>
-<div class="flex flex-col gap-xs"><label class="font-label-bold text-label-bold text-on-surface text-[13px]">Email</label><input type="email" placeholder="your@email.com" class="border border-outline-variant rounded-lg px-md py-[9px] font-body-md text-[14px] focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary bg-surface w-full mt-xs"></div>
-<div class="flex flex-col gap-xs"><label class="font-label-bold text-label-bold text-on-surface text-[13px]">Phone</label><input type="tel" placeholder="+254 7** *** ***" class="border border-outline-variant rounded-lg px-md py-[9px] font-body-md text-[14px] focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary bg-surface w-full mt-xs"></div>
-<div class="flex flex-col gap-xs"><label class="font-label-bold text-label-bold text-on-surface text-[13px]">Password</label><input type="password" placeholder="&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;" class="border border-outline-variant rounded-lg px-md py-[9px] font-body-md text-[14px] focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary bg-surface w-full mt-xs"></div>
-<div class="flex flex-col gap-xs"><label class="font-label-bold text-label-bold text-on-surface text-[13px]">Confirm Password</label><input type="password" placeholder="&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;" class="border border-outline-variant rounded-lg px-md py-[9px] font-body-md text-[14px] focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary bg-surface w-full mt-xs"></div>
-<button type="button" class="bg-secondary text-on-secondary font-label-bold text-label-bold py-[10px] rounded-lg hover:opacity-90 active:scale-95 transition-all min-h-[42px] w-full mt-sm">Create Account</button>
-<p class="text-center text-[13px] text-on-surface-variant">Have account? <button type="button" onclick="switchAuthTab('signin')" class="text-secondary hover:underline font-bold">Sign In</button></p>
+<div id="signup-content" class="auth-tab-content hidden flex flex-col gap-md">
+<h2 class="font-h3 text-h3 text-primary">Create Account</h2>
+<button type="button" class="w-full flex items-center justify-center gap-xs py-[8px] rounded-lg border border-outline-variant bg-white hover:bg-surface-container-low transition-colors font-label-bold text-[12.5px] text-on-surface shadow-sm"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="16" height="16" style="flex-shrink:0"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>Sign up with Google</button>
+<div class="flex items-center gap-sm"><div class="flex-1 h-px bg-outline-variant"></div><span class="text-[11px] text-on-surface-variant">or</span><div class="flex-1 h-px bg-outline-variant"></div></div>
+<div class="grid grid-cols-2 gap-sm">
+<div class="flex flex-col gap-xs"><label class="font-label-bold text-[13px] text-on-surface">Full Name</label><input type="text" placeholder="Your Name" class="border border-outline-variant rounded-lg px-sm py-[9px] text-[14px] focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary bg-surface w-full mt-xs"></div>
+<div class="flex flex-col gap-xs"><label class="font-label-bold text-[13px] text-on-surface">Phone</label><input type="tel" placeholder="+254 7** ***" class="border border-outline-variant rounded-lg px-sm py-[9px] text-[14px] focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary bg-surface w-full mt-xs"></div>
+</div>
+<div class="flex flex-col gap-xs"><label class="font-label-bold text-[13px] text-on-surface">Email</label><input type="email" placeholder="your@email.com" class="border border-outline-variant rounded-lg px-md py-[9px] text-[14px] focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary bg-surface w-full mt-xs"></div>
+<div class="grid grid-cols-2 gap-sm">
+<div class="flex flex-col gap-xs"><label class="font-label-bold text-[13px] text-on-surface">Password</label><input type="password" placeholder="&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;" class="border border-outline-variant rounded-lg px-sm py-[9px] text-[14px] focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary bg-surface w-full mt-xs"></div>
+<div class="flex flex-col gap-xs"><label class="font-label-bold text-[13px] text-on-surface">Confirm</label><input type="password" placeholder="&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;" class="border border-outline-variant rounded-lg px-sm py-[9px] text-[14px] focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary bg-surface w-full mt-xs"></div>
+</div>
+<button type="button" class="bg-secondary-container text-on-secondary font-label-bold text-label-bold py-[10px] rounded-lg hover:opacity-90 active:scale-95 transition-all min-h-[42px] w-full">Create Account</button>
+<p class="text-center text-[12px] text-on-surface-variant">Already have an account? <button type="button" onclick="switchAuthTab('signin')" class="text-secondary-container font-semibold hover:underline">Sign in</button></p>
 </div>
 <!-- Forgot -->
 <div id="forgot-content" class="auth-tab-content hidden flex flex-col gap-md">
-<div class="flex flex-col gap-xs"><label class="font-label-bold text-label-bold text-on-surface text-[13px]">Email</label><input type="email" placeholder="your@email.com" class="border border-outline-variant rounded-lg px-md py-[9px] font-body-md text-[14px] focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary bg-surface w-full mt-xs"></div>
-<button type="button" class="bg-secondary text-on-secondary font-label-bold text-label-bold py-[10px] rounded-lg hover:opacity-90 active:scale-95 transition-all min-h-[42px] w-full">Send Reset Link</button>
-<p class="text-center text-[13px] text-on-surface-variant">Remember? <button type="button" onclick="switchAuthTab('signin')" class="text-secondary hover:underline font-bold">Sign In</button></p>
+<h2 class="font-h3 text-h3 text-primary">Reset Password</h2>
+<div class="flex flex-col gap-xs"><label class="font-label-bold text-[13px] text-on-surface">Email</label><input type="email" placeholder="your@email.com" class="border border-outline-variant rounded-lg px-md py-[9px] text-[14px] focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary bg-surface w-full mt-xs"></div>
+<button type="button" class="bg-secondary-container text-on-secondary font-label-bold text-label-bold py-[10px] rounded-lg hover:opacity-90 active:scale-95 transition-all min-h-[42px] w-full">Send Reset Link</button>
+<p class="text-center text-[12px] text-on-surface-variant">Remember your password? <button type="button" onclick="switchAuthTab('signin')" class="text-secondary-container font-semibold hover:underline">Go to login</button></p>
 </div>
 </div>
 </div>
 </div>
 <script>
-(function(){var s=document.createElement('style');s.textContent='.tab-btn{flex:1;padding:6px 0;text-align:center;font-weight:600;font-size:13px;border-radius:8px;transition:all .15s;color:rgba(176,198,255,0.65)}.tab-btn-active{background:#fe8015;color:#5f2b00;font-weight:700}';document.head.appendChild(s);})();
 function openAuthModal(){document.getElementById('authModal').classList.remove('hidden');document.body.style.overflow='hidden';}
 function closeAuthModal(e){if(e&&e.target.id!=='authModal')return;document.getElementById('authModal').classList.add('hidden');document.body.style.overflow='';}
-function switchAuthTab(t){document.querySelectorAll('.auth-tab-content').forEach(c=>c.classList.add('hidden'));document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('tab-btn-active'));const c=document.getElementById(t+'-content');if(c)c.classList.remove('hidden');const b=document.getElementById('tab-'+t);if(b)b.classList.add('tab-btn-active');}
-document.addEventListener('DOMContentLoaded',()=>switchAuthTab('signin'));
-document.addEventListener('keydown',e=>{if(e.key==='Escape')closeAuthModal();});
+function switchAuthTab(t){document.querySelectorAll('.auth-tab-content').forEach(c=>c.classList.add('hidden'));var c=document.getElementById(t+'-content');if(c)c.classList.remove('hidden');}
+document.addEventListener('DOMContentLoaded',function(){switchAuthTab('signin');});
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeAuthModal();});
 </script>
+<script src="assets/site.js"></script>
 </body></html>
