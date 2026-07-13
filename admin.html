@@ -52,13 +52,21 @@ tailwind.config = {
   },
 }
 }catch(_e){}</script>
-<style>
+<style type="text/tailwindcss">
   .material-symbols-outlined { font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24; }
-  .sidebar-link { @apply flex items-center gap-sm px-sm py-[7px] rounded-lg text-primary-fixed-dim hover:bg-white/10 transition-colors font-body-md text-[13.5px] leading-tight; }
+  .sidebar-link { @apply flex items-center gap-sm px-sm py-[7px] rounded-lg text-primary-fixed-dim dark:text-blue-200/70 hover:bg-white/10 dark:hover:bg-white/[0.06] transition-colors font-body-md text-[13.5px] leading-tight; }
   .sidebar-link .material-symbols-outlined { font-size:17px; flex-shrink:0; }
 </style>
+<script>
+  // Apply saved/system theme before first paint (admin panel only — does not touch other pages).
+  (function() {
+    var saved = localStorage.getItem('adminTheme');
+    var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (saved === 'dark' || (!saved && prefersDark)) document.documentElement.classList.add('dark');
+  })();
+</script>
 </head>
-<body class="bg-background text-on-background font-body-md antialiased">
+<body class="bg-background text-on-background dark:bg-[#060c1a] dark:text-blue-50 font-body-md antialiased transition-colors">
 
 <!-- ═══════════════════════════════════════════════════
      LOGIN GATE
@@ -75,7 +83,6 @@ tailwind.config = {
     <div class="bg-surface rounded-2xl pt-[52px] pb-lg px-lg shadow-2xl border border-white/10">
       <div class="text-center mb-lg">
         <h1 class="font-h3 text-h3 text-primary">Admin Access</h1>
-        <p class="font-caption text-caption text-on-surface-variant mt-xs">Secure administrative portal</p>
       </div>
       <form onsubmit="adminLogin(event)" class="flex flex-col gap-md">
         <div>
@@ -94,11 +101,13 @@ tailwind.config = {
           </div>
         </div>
         <p id="loginError" class="text-error text-center font-caption text-caption hidden text-[12px]">Invalid credentials. Please try again.</p>
-        <button type="submit"
-          class="bg-primary text-on-primary font-label-bold text-label-bold py-[11px] rounded-lg hover:opacity-90 active:scale-95 transition-all mt-xs flex items-center justify-center gap-sm min-h-[44px]">
-          <span class="material-symbols-outlined text-[17px]">lock_open</span>
-          Sign In to Dashboard
-        </button>
+        <div class="flex justify-center mt-xs">
+          <button type="submit"
+            class="bg-secondary text-on-secondary font-label-bold text-label-bold py-[11px] px-xl rounded-full hover:opacity-90 active:scale-95 transition-all flex items-center justify-center gap-sm min-h-[44px] shadow-md">
+            <span class="material-symbols-outlined text-[17px]">lock_open</span>
+            Sign In
+          </button>
+        </div>
       </form>
     </div>
     <p class="text-center mt-lg">
@@ -112,7 +121,7 @@ tailwind.config = {
 <div id="adminApp" class="hidden min-h-screen flex">
 
   <!-- ── Sidebar ── -->
-  <aside class="bg-primary text-on-primary w-56 fixed left-0 top-0 h-screen flex flex-col z-50 border-r border-white/[0.08] shadow-[2px_0_16px_rgba(0,0,0,0.18)]">
+  <aside class="bg-primary dark:bg-[#040a17] text-on-primary w-56 fixed left-0 top-0 h-screen flex flex-col z-50 border-r border-white/[0.08] dark:border-white/[0.04] shadow-[2px_0_16px_rgba(0,0,0,0.18)] transition-colors">
 
     <!-- Brand -->
     <div class="px-md pt-lg pb-md flex items-center gap-sm border-b border-white/10">
@@ -159,25 +168,26 @@ tailwind.config = {
   <div class="ml-56 flex-1 flex flex-col min-h-screen min-w-0">
 
     <!-- Top bar -->
-    <header class="bg-surface-container-lowest border-b border-outline-variant sticky top-0 z-40 h-13 flex items-center justify-between px-lg" style="height:52px;">
+    <header class="bg-surface-container-lowest dark:bg-[#0d1729] border-b border-outline-variant dark:border-[#1a2d4f] sticky top-0 z-40 h-13 flex items-center justify-between px-lg transition-colors" style="height:52px;">
       <div class="relative flex-1 max-w-xs">
         <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline" style="font-size:17px;">search</span>
         <input type="text" placeholder="Search members, reports…"
-          class="w-full pl-9 pr-md py-1.5 bg-surface-container rounded-lg border border-outline-variant/60 focus:outline-none focus:ring-1 focus:ring-primary text-[13px] font-body-md">
+          class="w-full pl-9 pr-md py-1.5 bg-surface-container dark:bg-[#111f36] dark:text-blue-50 rounded-lg border border-outline-variant/60 dark:border-[#1e3461] focus:outline-none focus:ring-1 focus:ring-primary text-[13px] font-body-md">
       </div>
       <div class="flex items-center gap-md">
-        <button class="relative text-on-surface-variant hover:text-primary transition-colors">
+        <button onclick="toggleTheme()" class="text-on-surface-variant dark:text-blue-200/60 hover:text-primary dark:hover:text-primary-fixed-dim transition-colors" title="Toggle theme">
+          <span class="material-symbols-outlined" id="themeIcon" style="font-size:20px;">dark_mode</span>
+        </button>
+        <button class="relative text-on-surface-variant dark:text-blue-200/60 hover:text-primary dark:hover:text-primary-fixed-dim transition-colors">
           <span class="material-symbols-outlined" style="font-size:20px;">notifications</span>
           <span class="absolute -top-1 -right-1 bg-secondary text-white text-[9px] font-bold px-1 rounded-full leading-[14px]">3</span>
         </button>
         <div class="flex items-center gap-sm cursor-pointer group">
           <div class="text-right hidden sm:block">
-            <p class="font-label-bold text-[12px] text-on-surface leading-tight">Admin User</p>
-            <p class="text-[11px] text-on-surface-variant font-caption">System Admin</p>
+            <p class="font-label-bold text-[12px] text-on-surface dark:text-blue-50 leading-tight">Admin User</p>
+            <p class="text-[11px] text-on-surface-variant dark:text-blue-200/60 font-caption">System Admin</p>
           </div>
-          <img class="h-8 w-8 rounded-full border border-outline-variant object-cover"
-               src="https://lh3.googleusercontent.com/aida-public/AB6AXuDwQiXo0nXYyCFnixY4wCRHhmplnTYwjdVUcJDeFaBnkXINyVS27aW2lBcOLc19A6siGXuuIDfUcYMIeVvB44QI4Fno2WTYTHBtXuzZm-EtuD11YyCR_VoDaVHwmOv9DlqGdzNdTvVL1NcXMb-MuXgq0hcXHei5EWXae-FBz_KIwd0oXALoijK4pwJSezigf5bKrt9Mhdk91DvC6PYuTN5VKJTjauFVbuDdszH5UhYZWLxALpDxj2bWlg"
-               alt="Admin">
+          <div class="h-8 w-8 rounded-full border border-outline-variant dark:border-[#1e3461] bg-primary text-on-primary flex items-center justify-center font-label-bold text-[12px] flex-shrink-0">AU</div>
         </div>
       </div>
     </header>
@@ -188,64 +198,64 @@ tailwind.config = {
       <!-- Page heading -->
       <div class="flex items-center justify-between">
         <div>
-          <h1 class="font-h2 text-h2 text-primary">Dashboard</h1>
-          <p class="font-body-md text-body-md text-on-surface-variant mt-xs">Welcome back. Here's what's happening today.</p>
+          <h1 class="font-h2 text-h2 text-primary dark:text-primary-fixed-dim">Dashboard</h1>
+          <p class="font-body-md text-body-md text-on-surface-variant dark:text-blue-200/60 mt-xs">Welcome back. Here's what's happening today.</p>
         </div>
-        <span class="font-caption text-caption text-on-surface-variant bg-surface-container px-md py-xs rounded-full border border-outline-variant">July 2026</span>
+        <span class="font-caption text-caption text-on-surface-variant dark:text-blue-200/60 bg-surface-container dark:bg-[#0d1729] px-md py-xs rounded-full border border-outline-variant dark:border-[#1a2d4f]">July 2026</span>
       </div>
 
       <!-- ── Stat Cards ── -->
       <section class="grid grid-cols-2 lg:grid-cols-5 gap-md">
 
-        <div class="bg-surface-container-lowest rounded-xl border border-outline-variant p-md flex flex-col gap-sm hover:shadow-[0_2px_12px_rgba(0,31,80,0.07)] transition-all duration-200 group">
+        <div class="bg-surface-container-lowest dark:bg-[#0d1729] rounded-xl border border-outline-variant dark:border-[#1a2d4f] p-md flex flex-col gap-sm hover:shadow-[0_2px_12px_rgba(0,31,80,0.07)] transition-all duration-200 group">
           <div class="flex justify-between items-start">
-            <p class="font-caption text-[11px] text-on-surface-variant uppercase tracking-wider">Total Members</p>
-            <div class="bg-primary-fixed/50 p-1.5 rounded-lg text-primary group-hover:bg-primary-fixed transition-colors">
+            <p class="font-caption text-[11px] text-on-surface-variant dark:text-blue-200/60 uppercase tracking-wider">Total Members</p>
+            <div class="bg-primary-fixed/50 dark:bg-primary/30 p-1.5 rounded-lg text-primary dark:text-primary-fixed-dim group-hover:bg-primary-fixed transition-colors">
               <span class="material-symbols-outlined" style="font-size:16px;">group</span>
             </div>
           </div>
-          <p class="font-h3 text-h3 text-on-surface mt-xs">152</p>
+          <p class="font-h3 text-h3 text-on-surface dark:text-blue-50 mt-xs">152</p>
         </div>
 
-        <div class="bg-surface-container-lowest rounded-xl border border-outline-variant p-md flex flex-col gap-sm hover:shadow-[0_2px_12px_rgba(0,31,80,0.07)] transition-all duration-200 group">
+        <div class="bg-surface-container-lowest dark:bg-[#0d1729] rounded-xl border border-outline-variant dark:border-[#1a2d4f] p-md flex flex-col gap-sm hover:shadow-[0_2px_12px_rgba(0,31,80,0.07)] transition-all duration-200 group">
           <div class="flex justify-between items-start">
-            <p class="font-caption text-[11px] text-on-surface-variant uppercase tracking-wider">Active</p>
-            <div class="bg-[#dcfce7] p-1.5 rounded-lg text-[#166534] group-hover:bg-[#bbf7d0] transition-colors">
+            <p class="font-caption text-[11px] text-on-surface-variant dark:text-blue-200/60 uppercase tracking-wider">Active</p>
+            <div class="bg-[#dcfce7] dark:bg-[#14532d]/40 p-1.5 rounded-lg text-[#166534] dark:text-[#4ade80] group-hover:bg-[#bbf7d0] transition-colors">
               <span class="material-symbols-outlined" style="font-size:16px;">verified_user</span>
             </div>
           </div>
-          <p class="font-h3 text-h3 text-on-surface mt-xs">145</p>
+          <p class="font-h3 text-h3 text-on-surface dark:text-blue-50 mt-xs">145</p>
         </div>
 
-        <div class="bg-surface-container-lowest rounded-xl border-2 border-secondary-container/30 p-md flex flex-col gap-sm relative overflow-hidden hover:shadow-[0_2px_12px_rgba(254,128,21,0.12)] transition-all duration-200">
+        <div class="bg-surface-container-lowest dark:bg-[#0d1729] rounded-xl border-2 border-secondary-container/30 p-md flex flex-col gap-sm relative overflow-hidden hover:shadow-[0_2px_12px_rgba(254,128,21,0.12)] transition-all duration-200">
           <div class="absolute top-0 left-0 w-full h-0.5 bg-secondary-container"></div>
           <div class="flex justify-between items-start">
-            <p class="font-caption text-[11px] text-secondary font-bold uppercase tracking-wider">Pending</p>
-            <div class="bg-secondary-fixed/50 p-1.5 rounded-lg text-secondary">
+            <p class="font-caption text-[11px] text-secondary dark:text-secondary-container font-bold uppercase tracking-wider">Pending</p>
+            <div class="bg-secondary-fixed/50 dark:bg-secondary/30 p-1.5 rounded-lg text-secondary dark:text-secondary-container">
               <span class="material-symbols-outlined" style="font-size:16px;">hourglass_empty</span>
             </div>
           </div>
-          <p class="font-h3 text-h3 text-secondary mt-xs">7</p>
+          <p class="font-h3 text-h3 text-secondary dark:text-secondary-container mt-xs">7</p>
         </div>
 
-        <div class="bg-surface-container-lowest rounded-xl border border-outline-variant p-md flex flex-col gap-sm hover:shadow-[0_2px_12px_rgba(0,31,80,0.07)] transition-all duration-200 group">
+        <div class="bg-surface-container-lowest dark:bg-[#0d1729] rounded-xl border border-outline-variant dark:border-[#1a2d4f] p-md flex flex-col gap-sm hover:shadow-[0_2px_12px_rgba(0,31,80,0.07)] transition-all duration-200 group">
           <div class="flex justify-between items-start">
-            <p class="font-caption text-[11px] text-on-surface-variant uppercase tracking-wider">Contributions</p>
-            <div class="bg-tertiary-fixed/50 p-1.5 rounded-lg text-tertiary group-hover:bg-tertiary-fixed transition-colors">
+            <p class="font-caption text-[11px] text-on-surface-variant dark:text-blue-200/60 uppercase tracking-wider">Contributions</p>
+            <div class="bg-tertiary-fixed/50 dark:bg-tertiary/50 p-1.5 rounded-lg text-tertiary dark:text-tertiary-fixed group-hover:bg-tertiary-fixed transition-colors">
               <span class="material-symbols-outlined" style="font-size:16px;">payments</span>
             </div>
           </div>
-          <p class="font-h3 text-h3 text-on-surface mt-xs">KES 45k</p>
+          <p class="font-h3 text-h3 text-on-surface dark:text-blue-50 mt-xs">KES 45k</p>
         </div>
 
-        <div class="bg-surface-container-lowest rounded-xl border border-outline-variant p-md flex flex-col gap-sm hover:shadow-[0_2px_12px_rgba(0,31,80,0.07)] transition-all duration-200 group">
+        <div class="bg-surface-container-lowest dark:bg-[#0d1729] rounded-xl border border-outline-variant dark:border-[#1a2d4f] p-md flex flex-col gap-sm hover:shadow-[0_2px_12px_rgba(0,31,80,0.07)] transition-all duration-200 group">
           <div class="flex justify-between items-start">
-            <p class="font-caption text-[11px] text-on-surface-variant uppercase tracking-wider">Events</p>
-            <div class="bg-primary-fixed/50 p-1.5 rounded-lg text-primary group-hover:bg-primary-fixed transition-colors">
+            <p class="font-caption text-[11px] text-on-surface-variant dark:text-blue-200/60 uppercase tracking-wider">Events</p>
+            <div class="bg-primary-fixed/50 dark:bg-primary/30 p-1.5 rounded-lg text-primary dark:text-primary-fixed-dim group-hover:bg-primary-fixed transition-colors">
               <span class="material-symbols-outlined" style="font-size:16px;">event</span>
             </div>
           </div>
-          <p class="font-h3 text-h3 text-on-surface mt-xs">2</p>
+          <p class="font-h3 text-h3 text-on-surface dark:text-blue-50 mt-xs">2</p>
         </div>
 
       </section>
@@ -257,47 +267,47 @@ tailwind.config = {
         <div class="lg:col-span-2 space-y-lg">
 
           <!-- Pending Registrations -->
-          <div class="bg-surface-container-lowest rounded-xl border border-outline-variant overflow-hidden">
-            <div class="px-lg py-md border-b border-surface-container-highest flex justify-between items-center">
-              <h2 class="font-h3 text-h3 text-primary">Pending Registrations</h2>
-              <button class="text-secondary font-label-bold text-label-bold hover:underline text-[13px]">View All</button>
+          <div class="bg-surface-container-lowest dark:bg-[#0d1729] rounded-xl border border-outline-variant dark:border-[#1a2d4f] overflow-hidden">
+            <div class="px-lg py-md border-b border-surface-container-highest dark:border-[#1a2d4f] flex justify-between items-center">
+              <h2 class="font-h3 text-h3 text-primary dark:text-primary-fixed-dim">Pending Registrations</h2>
+              <button class="text-secondary dark:text-secondary-container font-label-bold text-label-bold hover:underline text-[13px]">View All</button>
             </div>
             <div class="overflow-x-auto">
               <table class="w-full text-left">
                 <thead>
-                  <tr class="bg-surface-container-low border-b border-surface-container-highest">
-                    <th class="py-2.5 px-lg font-label-bold text-[12px] text-on-surface-variant uppercase tracking-wide">Name</th>
-                    <th class="py-2.5 px-lg font-label-bold text-[12px] text-on-surface-variant uppercase tracking-wide">Phone</th>
-                    <th class="py-2.5 px-lg font-label-bold text-[12px] text-on-surface-variant uppercase tracking-wide">Date Applied</th>
-                    <th class="py-2.5 px-lg font-label-bold text-[12px] text-on-surface-variant uppercase tracking-wide text-right">Actions</th>
+                  <tr class="bg-surface-container-low dark:bg-[#111f36]/40 border-b border-surface-container-highest dark:border-[#1a2d4f]">
+                    <th class="py-2.5 px-lg font-label-bold text-[12px] text-on-surface-variant dark:text-blue-200/60 uppercase tracking-wide">Name</th>
+                    <th class="py-2.5 px-lg font-label-bold text-[12px] text-on-surface-variant dark:text-blue-200/60 uppercase tracking-wide">Phone</th>
+                    <th class="py-2.5 px-lg font-label-bold text-[12px] text-on-surface-variant dark:text-blue-200/60 uppercase tracking-wide">Date Applied</th>
+                    <th class="py-2.5 px-lg font-label-bold text-[12px] text-on-surface-variant dark:text-blue-200/60 uppercase tracking-wide text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody class="divide-y divide-surface-container-highest">
-                  <tr class="hover:bg-surface-container-low/50 transition-colors">
-                    <td class="py-3 px-lg font-label-bold text-[13.5px] text-on-surface">Michael Ochieng</td>
-                    <td class="py-3 px-lg text-on-surface-variant text-[13px]">+254 712 345 678</td>
-                    <td class="py-3 px-lg text-on-surface-variant text-[13px]">Oct 24, 2023</td>
+                <tbody class="divide-y divide-surface-container-highest dark:divide-slate-700">
+                  <tr class="hover:bg-surface-container-low/50 dark:hover:bg-slate-700/30 transition-colors">
+                    <td class="py-3 px-lg font-label-bold text-[13.5px] text-on-surface dark:text-blue-50">Michael Ochieng</td>
+                    <td class="py-3 px-lg text-on-surface-variant dark:text-blue-200/60 text-[13px]">+254 712 345 678</td>
+                    <td class="py-3 px-lg text-on-surface-variant dark:text-blue-200/60 text-[13px]">Oct 24, 2023</td>
                     <td class="py-3 px-lg text-right space-x-2">
-                      <button class="px-3 py-1 bg-[#dcfce7] text-[#166534] rounded-lg font-label-bold text-[11px] hover:bg-[#bbf7d0] transition-colors border border-[#86efac]">Approve</button>
-                      <button class="px-3 py-1 bg-error-container text-on-error-container rounded-lg font-label-bold text-[11px] hover:bg-[#ffb4ab] transition-colors border border-[#ff897d]">Reject</button>
+                      <button class="px-3 py-1 bg-[#dcfce7] dark:bg-[#14532d]/40 text-[#166534] dark:text-[#4ade80] rounded-lg font-label-bold text-[11px] hover:bg-[#bbf7d0] transition-colors border border-[#86efac] dark:border-[#166534]">Approve</button>
+                      <button class="px-3 py-1 bg-error-container dark:bg-error/20 text-on-error-container dark:text-[#ff897d] rounded-lg font-label-bold text-[11px] hover:bg-[#ffb4ab] transition-colors border border-[#ff897d] dark:border-error">Reject</button>
                     </td>
                   </tr>
-                  <tr class="hover:bg-surface-container-low/50 transition-colors bg-surface/50">
-                    <td class="py-3 px-lg font-label-bold text-[13.5px] text-on-surface">Sarah Wangari</td>
-                    <td class="py-3 px-lg text-on-surface-variant text-[13px]">+254 722 987 654</td>
-                    <td class="py-3 px-lg text-on-surface-variant text-[13px]">Oct 23, 2023</td>
+                  <tr class="hover:bg-surface-container-low/50 dark:hover:bg-slate-700/30 transition-colors bg-surface/50 dark:bg-[#0d1729]/40">
+                    <td class="py-3 px-lg font-label-bold text-[13.5px] text-on-surface dark:text-blue-50">Sarah Wangari</td>
+                    <td class="py-3 px-lg text-on-surface-variant dark:text-blue-200/60 text-[13px]">+254 722 987 654</td>
+                    <td class="py-3 px-lg text-on-surface-variant dark:text-blue-200/60 text-[13px]">Oct 23, 2023</td>
                     <td class="py-3 px-lg text-right space-x-2">
-                      <button class="px-3 py-1 bg-[#dcfce7] text-[#166534] rounded-lg font-label-bold text-[11px] hover:bg-[#bbf7d0] transition-colors border border-[#86efac]">Approve</button>
-                      <button class="px-3 py-1 bg-error-container text-on-error-container rounded-lg font-label-bold text-[11px] hover:bg-[#ffb4ab] transition-colors border border-[#ff897d]">Reject</button>
+                      <button class="px-3 py-1 bg-[#dcfce7] dark:bg-[#14532d]/40 text-[#166534] dark:text-[#4ade80] rounded-lg font-label-bold text-[11px] hover:bg-[#bbf7d0] transition-colors border border-[#86efac] dark:border-[#166534]">Approve</button>
+                      <button class="px-3 py-1 bg-error-container dark:bg-error/20 text-on-error-container dark:text-[#ff897d] rounded-lg font-label-bold text-[11px] hover:bg-[#ffb4ab] transition-colors border border-[#ff897d] dark:border-error">Reject</button>
                     </td>
                   </tr>
-                  <tr class="hover:bg-surface-container-low/50 transition-colors">
-                    <td class="py-3 px-lg font-label-bold text-[13.5px] text-on-surface">David Kipkorir</td>
-                    <td class="py-3 px-lg text-on-surface-variant text-[13px]">+254 733 456 789</td>
-                    <td class="py-3 px-lg text-on-surface-variant text-[13px]">Oct 21, 2023</td>
+                  <tr class="hover:bg-surface-container-low/50 dark:hover:bg-slate-700/30 transition-colors">
+                    <td class="py-3 px-lg font-label-bold text-[13.5px] text-on-surface dark:text-blue-50">David Kipkorir</td>
+                    <td class="py-3 px-lg text-on-surface-variant dark:text-blue-200/60 text-[13px]">+254 733 456 789</td>
+                    <td class="py-3 px-lg text-on-surface-variant dark:text-blue-200/60 text-[13px]">Oct 21, 2023</td>
                     <td class="py-3 px-lg text-right space-x-2">
-                      <button class="px-3 py-1 bg-[#dcfce7] text-[#166534] rounded-lg font-label-bold text-[11px] hover:bg-[#bbf7d0] transition-colors border border-[#86efac]">Approve</button>
-                      <button class="px-3 py-1 bg-error-container text-on-error-container rounded-lg font-label-bold text-[11px] hover:bg-[#ffb4ab] transition-colors border border-[#ff897d]">Reject</button>
+                      <button class="px-3 py-1 bg-[#dcfce7] dark:bg-[#14532d]/40 text-[#166534] dark:text-[#4ade80] rounded-lg font-label-bold text-[11px] hover:bg-[#bbf7d0] transition-colors border border-[#86efac] dark:border-[#166534]">Approve</button>
+                      <button class="px-3 py-1 bg-error-container dark:bg-error/20 text-on-error-container dark:text-[#ff897d] rounded-lg font-label-bold text-[11px] hover:bg-[#ffb4ab] transition-colors border border-[#ff897d] dark:border-error">Reject</button>
                     </td>
                   </tr>
                 </tbody>
@@ -306,15 +316,15 @@ tailwind.config = {
           </div>
 
           <!-- Member Overview -->
-          <div class="bg-surface-container-lowest rounded-xl border border-outline-variant overflow-hidden">
-            <div class="px-lg py-md border-b border-surface-container-highest flex justify-between items-center">
-              <h2 class="font-h3 text-h3 text-primary">Member Overview</h2>
-              <button class="text-primary font-label-bold text-label-bold hover:underline flex items-center gap-xs text-[13px]">
+          <div class="bg-surface-container-lowest dark:bg-[#0d1729] rounded-xl border border-outline-variant dark:border-[#1a2d4f] overflow-hidden">
+            <div class="px-lg py-md border-b border-surface-container-highest dark:border-[#1a2d4f] flex justify-between items-center">
+              <h2 class="font-h3 text-h3 text-primary dark:text-primary-fixed-dim">Member Overview</h2>
+              <button class="text-primary dark:text-primary-fixed-dim font-label-bold text-label-bold hover:underline flex items-center gap-xs text-[13px]">
                 View Directory <span class="material-symbols-outlined" style="font-size:14px;">arrow_forward</span>
               </button>
             </div>
             <div class="p-lg">
-              <div class="bg-surface-container-low rounded-lg p-lg flex items-center justify-center border border-dashed border-outline-variant text-on-surface-variant">
+              <div class="bg-surface-container-low dark:bg-[#111f36]/30 rounded-lg p-lg flex items-center justify-center border border-dashed border-outline-variant dark:border-[#1e3461] text-on-surface-variant dark:text-blue-200/60">
                 <p class="text-[13px]">Member Management Table Content goes here…</p>
               </div>
             </div>
@@ -377,11 +387,32 @@ function adminLogout() {
   document.getElementById('loginPassword').value = '';
 }
 
+// DEV: prefill credentials for convenience, but do NOT log in automatically —
+// the user must click "Sign In" to actually enter the admin app.
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('loginEmail').value = 'admin@alubonets.com';
+  document.getElementById('loginPassword').value = 'admin123';
+  updateThemeIcon();
+});
+
 function toggleAdminPw() {
   const pw = document.getElementById('loginPassword');
   const icon = document.getElementById('adminEyeIcon');
   pw.type = pw.type === 'password' ? 'text' : 'password';
   icon.textContent = pw.type === 'password' ? 'visibility' : 'visibility_off';
+}
+
+// ── Theme toggle (admin panel only; preference stored separately from the public site) ──
+function toggleTheme() {
+  const isDark = document.documentElement.classList.toggle('dark');
+  localStorage.setItem('adminTheme', isDark ? 'dark' : 'light');
+  updateThemeIcon();
+}
+
+function updateThemeIcon() {
+  const icon = document.getElementById('themeIcon');
+  if (!icon) return;
+  icon.textContent = document.documentElement.classList.contains('dark') ? 'light_mode' : 'dark_mode';
 }
 </script>
 
