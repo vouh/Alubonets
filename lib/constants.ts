@@ -21,5 +21,6 @@ export const NAV_LINKS: { href: string; label: string; small?: boolean }[] = [
   { href: '/projects', label: 'Projects' },
   { href: '/gallery', label: 'Gallery' },
   { href: '/contact', label: 'Contact' },
+  { href: '/login', label: 'Portal', small: true },
   { href: '/admin', label: 'Admin', small: true },
 ]

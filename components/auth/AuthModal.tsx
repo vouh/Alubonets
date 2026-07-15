@@ -1,6 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { type FormEvent, useEffect, useState } from 'react'
+import { loginRequest } from '@/lib/auth/client'
 
 type AuthTab = 'signin' | 'signup' | 'forgot'
 
@@ -19,7 +21,15 @@ const GoogleIcon = () => (
   </svg>
 )
 
-function PasswordInput({ placeholder }: { placeholder: string }) {
+function PasswordInput({
+  placeholder,
+  value,
+  onChange,
+}: {
+  placeholder: string
+  value: string
+  onChange: (v: string) => void
+}) {
   const [show, setShow] = useState(false)
   return (
     <div className="auth-password-wrap">
@@ -27,6 +37,8 @@ function PasswordInput({ placeholder }: { placeholder: string }) {
         type={show ? 'text' : 'password'}
         placeholder={placeholder}
         className="auth-field auth-field-password"
+        value={value}
+        onChange={e => onChange(e.target.value)}
         required
       />
       <button
@@ -44,8 +56,13 @@ function PasswordInput({ placeholder }: { placeholder: string }) {
 }
 
 export default function AuthModal() {
+  const router = useRouter()
   const [open, setOpen] = useState(false)
   const [tab, setTab] = useState<AuthTab>('signin')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     _open = () => setOpen(true)
@@ -73,6 +90,22 @@ export default function AuthModal() {
     return () => document.removeEventListener('keydown', onKey)
   }, [])
 
+  const onSignIn = async (e: FormEvent) => {
+    e.preventDefault()
+    setError('')
+    setLoading(true)
+    try {
+      const { redirectTo } = await loginRequest(email, password)
+      setOpen(false)
+      router.push(redirectTo)
+      router.refresh()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Invalid credentials')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   if (!open) return null
 
   return (
@@ -96,7 +129,7 @@ export default function AuthModal() {
 
         <div className="auth-modal-body">
           {tab === 'signin' && (
-            <div className="auth-tab-content flex flex-col gap-md">
+            <form className="auth-tab-content flex flex-col gap-md" onSubmit={onSignIn}>
               <h2 className="font-h3 text-h3 text-primary">Sign In</h2>
               <button type="button" className="auth-google-btn">
                 <GoogleIcon />
@@ -109,16 +142,24 @@ export default function AuthModal() {
                 <label className="auth-label">
                   Email <span className="req">*</span>
                 </label>
-                <input type="email" placeholder="your@email.com" className="auth-field" required />
+                <input
+                  type="email"
+                  placeholder="your@email.com"
+                  className="auth-field"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  required
+                />
               </div>
               <div className="flex flex-col gap-xs">
                 <label className="auth-label">
                   Password <span className="req">*</span>
                 </label>
-                <PasswordInput placeholder="••••••••" />
+                <PasswordInput placeholder="••••••••" value={password} onChange={setPassword} />
               </div>
-              <button type="button" className="auth-primary-btn">
-                Sign In
+              {error && <p className="text-error text-[12px] text-center">{error}</p>}
+              <button type="submit" className="auth-primary-btn" disabled={loading}>
+                {loading ? 'Signing in…' : 'Sign In'}
               </button>
               <div className="flex items-center justify-between text-[12px] text-on-surface-variant">
                 <button
@@ -136,7 +177,13 @@ export default function AuthModal() {
                   No account? <span className="auth-link-accent">Create account</span>
                 </button>
               </div>
-            </div>
+              <p className="text-[11px] text-center text-on-surface-variant">
+                Test: admin@alubonets.com / admin123 — or{' '}
+                <a href="/login" className="auth-link-accent">
+                  all role emails
+                </a>
+              </p>
+            </form>
           )}
 
           {tab === 'signup' && (
@@ -174,13 +221,13 @@ export default function AuthModal() {
                   <label className="auth-label">
                     Password <span className="req">*</span>
                   </label>
-                  <PasswordInput placeholder="••••••" />
+                  <PasswordInput placeholder="••••••" value="" onChange={() => {}} />
                 </div>
                 <div className="flex flex-col gap-xs">
                   <label className="auth-label">
                     Confirm <span className="req">*</span>
                   </label>
-                  <PasswordInput placeholder="••••••" />
+                  <PasswordInput placeholder="••••••" value="" onChange={() => {}} />
                 </div>
               </div>
               <button type="button" className="auth-primary-btn">

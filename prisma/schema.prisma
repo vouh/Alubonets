@@ -10,8 +10,10 @@ datasource db {
 
 enum Role {
   ADMIN
+  EXECUTIVE
   TREASURER
   SECRETARY
+  ORGANIZER
   MEMBER
 }
 

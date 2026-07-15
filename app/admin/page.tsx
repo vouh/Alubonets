@@ -1,8 +1,18 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { type FormEvent, useEffect, useState } from 'react'
 import { ADMIN_LOGIN_LOGO, ADMIN_SIDEBAR_LOGO } from '@/lib/constants'
+import {
+  homeForRole,
+  loginRequest,
+  logoutRequest,
+  meRequest,
+  type AuthUser,
+} from '@/lib/auth/client'
+import AdminExtras from '@/components/dashboard/AdminExtras'
+import { TEST_ACCOUNTS } from '@/lib/auth/users'
 
 const PENDING = [
   { name: 'Michael Ochieng', phone: '+254 712 345 678', date: 'Oct 24, 2023', alt: false },
@@ -12,7 +22,7 @@ const PENDING = [
 
 const SIDEBAR_LINKS: { icon: string; label: string; badge?: string; active?: boolean }[] = [
   { icon: 'dashboard', label: 'Dashboard', active: true },
-  { icon: 'person_add', label: 'Pending', badge: '7' },
+  { icon: 'person_add', label: 'Pending', badge: '18' },
   { icon: 'group', label: 'Members' },
   { icon: 'admin_panel_settings', label: 'Roles & Permissions' },
   { icon: 'payments', label: 'Contributions' },
@@ -32,11 +42,14 @@ function greetingForHour(hour: number) {
 }
 
 export default function AdminPage() {
+  const router = useRouter()
   const [loggedIn, setLoggedIn] = useState(false)
+  const [user, setUser] = useState<AuthUser | null>(null)
   const [email, setEmail] = useState('admin@alubonets.com')
   const [password, setPassword] = useState('admin123')
   const [showPw, setShowPw] = useState(false)
-  const [loginError, setLoginError] = useState(false)
+  const [loginError, setLoginError] = useState('')
+  const [loginLoading, setLoginLoading] = useState(false)
   const [isDark, setIsDark] = useState(false)
   const [welcome, setWelcome] = useState("Welcome back. Here's what's happening today.")
 
@@ -49,15 +62,27 @@ export default function AdminPage() {
   }, [])
 
   useEffect(() => {
+    meRequest().then(u => {
+      if (u?.role === 'ADMIN') {
+        setUser(u)
+        setLoggedIn(true)
+        localStorage.setItem('adminName', u.fullName.split(' ')[0])
+      } else if (u) {
+        router.replace(homeForRole(u.role))
+      }
+    })
+  }, [router])
+
+  useEffect(() => {
     if (!loggedIn) return
     const update = () => {
-      const adminName = localStorage.getItem('adminName') || 'Collins'
-      setWelcome(`${greetingForHour(new Date().getHours())}, ${adminName}.`)
+      const name = user?.fullName.split(' ')[0] || localStorage.getItem('adminName') || 'Gina'
+      setWelcome(`${greetingForHour(new Date().getHours())}, ${name}.`)
     }
     update()
     const id = setInterval(update, 60000)
     return () => clearInterval(id)
-  }, [loggedIn])
+  }, [loggedIn, user])
 
   useEffect(() => {
     if (loggedIn) {
@@ -77,20 +102,32 @@ export default function AdminPage() {
     setIsDark(next)
   }
 
-  const onLogin = (e: FormEvent) => {
+  const onLogin = async (e: FormEvent) => {
     e.preventDefault()
-    if (email.trim() && password) {
-      setLoginError(false)
+    setLoginError('')
+    setLoginLoading(true)
+    try {
+      const { user: u, redirectTo } = await loginRequest(email, password)
+      if (u.role !== 'ADMIN') {
+        router.push(redirectTo)
+        return
+      }
+      setUser(u)
       setLoggedIn(true)
-    } else {
-      setLoginError(true)
+      localStorage.setItem('adminName', u.fullName.split(' ')[0])
+    } catch (err) {
+      setLoginError(err instanceof Error ? err.message : 'Invalid credentials. Please try again.')
+    } finally {
+      setLoginLoading(false)
     }
   }
 
-  const onLogout = () => {
+  const onLogout = async () => {
+    await logoutRequest()
     setLoggedIn(false)
-    setEmail('')
-    setPassword('')
+    setUser(null)
+    setEmail('admin@alubonets.com')
+    setPassword('admin123')
   }
 
   if (!loggedIn) {
@@ -105,6 +142,9 @@ export default function AdminPage() {
           <div className="bg-surface rounded-2xl pt-[52px] pb-lg px-lg shadow-2xl border border-white/10">
             <div className="text-center mb-lg">
               <h1 className="font-h3 text-h3 text-secondary-container">Admin Login</h1>
+              <p className="font-caption text-caption text-on-surface-variant mt-xs">
+                JWT role session — other roles redirect to their dashboard
+              </p>
             </div>
             <form onSubmit={onLogin} className="flex flex-col gap-md">
               <div>
@@ -146,19 +186,45 @@ export default function AdminPage() {
               </div>
               {loginError && (
                 <p className="text-error text-center font-caption text-caption text-[12px]">
-                  Invalid credentials. Please try again.
+                  {loginError}
                 </p>
               )}
               <div className="flex justify-center mt-xs">
                 <button
                   type="submit"
-                  className="bg-secondary-container text-on-secondary font-label-bold text-label-bold py-[11px] px-xl rounded-full hover:opacity-90 active:scale-95 transition-all flex items-center justify-center gap-sm min-h-[44px] shadow-md"
+                  disabled={loginLoading}
+                  className="bg-secondary-container text-on-secondary font-label-bold text-label-bold py-[11px] px-xl rounded-full hover:opacity-90 active:scale-95 transition-all flex items-center justify-center gap-sm min-h-[44px] shadow-md disabled:opacity-60"
                 >
                   <span className="material-symbols-outlined text-[17px]">lock_open</span>
-                  Sign In
+                  {loginLoading ? 'Signing in…' : 'Sign In'}
                 </button>
               </div>
             </form>
+            <div className="mt-lg pt-md border-t border-outline-variant/40">
+              <p className="font-label-bold text-[11px] text-on-surface-variant uppercase tracking-wider mb-sm text-center">
+                Role test emails
+              </p>
+              <div className="flex flex-col gap-xs max-h-40 overflow-y-auto">
+                {TEST_ACCOUNTS.map(a => (
+                  <button
+                    key={a.email}
+                    type="button"
+                    onClick={() => {
+                      setEmail(a.email)
+                      setPassword(a.password)
+                      setLoginError('')
+                    }}
+                    className="text-left px-sm py-xs rounded-lg hover:bg-surface-container text-[12px]"
+                  >
+                    <span className="font-semibold text-primary">{a.role}</span>
+                    <span className="text-on-surface-variant">
+                      {' '}
+                      — {a.email} / {a.password}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
           <p className="text-center mt-lg">
             <Link
@@ -276,13 +342,24 @@ export default function AdminPage() {
             <div className="flex items-center gap-sm cursor-pointer group">
               <div className="text-right hidden sm:block">
                 <p className="font-label-bold text-[12px] text-on-surface dark:text-blue-50 leading-tight">
-                  Admin
+                  {user?.fullName || 'Admin'}
                 </p>
               </div>
               <div className="h-8 w-8 rounded-full border border-outline-variant dark:border-[#1e3461] bg-primary text-on-primary flex items-center justify-center font-label-bold text-[12px] flex-shrink-0">
-                C
+                {user?.initials || 'G'}
               </div>
             </div>
+            <button
+              type="button"
+              onClick={onLogout}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-secondary-container/40 bg-secondary-container text-on-primary px-md py-1.5 font-label-bold text-[12px] hover:opacity-90 active:scale-95 transition-all shadow-sm"
+              title="Sign out"
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: 18 }}>
+                logout
+              </span>
+              <span className="hidden sm:inline">Sign out</span>
+            </button>
           </div>
         </header>
 
@@ -524,6 +601,8 @@ export default function AdminPage() {
               </div>
             </div>
           </div>
+
+          <AdminExtras />
         </main>
       </div>
     </div>
