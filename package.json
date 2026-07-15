@@ -15,7 +15,8 @@
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
-    "@supabase/supabase-js": "^2.46.1",
+    "@supabase/ssr": "^0.12.3",
+    "@supabase/supabase-js": "^2.110.6",
     "chart.js": "^4.4.6",
     "docx": "^9.0.3",
     "jose": "^6.2.3",

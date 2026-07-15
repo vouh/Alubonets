@@ -1,8 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { AUTH_COOKIE, ROLE_HOME, type Role } from '@/lib/auth/types'
 import { verifyToken } from '@/lib/auth/jwt'
+import { updateSession } from '@/utils/supabase/middleware'
 
-function allowedDashboard(role: Role, pathname: string) {
+function isProtectedPath(pathname: string) {
+  return (
+    pathname.startsWith('/dashboard') ||
+    pathname === '/admin' ||
+    pathname.startsWith('/admin/')
+  )
+}
+
+function allowedPath(role: Role, pathname: string) {
+  if (pathname === '/admin' || pathname.startsWith('/admin/')) {
+    return role === 'ADMIN'
+  }
   if (role === 'ADMIN') {
     // Admins may open any dashboard for oversight
     return pathname.startsWith('/dashboard')
@@ -11,12 +23,21 @@ function allowedDashboard(role: Role, pathname: string) {
   return pathname === home || pathname.startsWith(`${home}/`)
 }
 
+function copyCookies(from: NextResponse, to: NextResponse) {
+  from.cookies.getAll().forEach(({ name, value }) => {
+    to.cookies.set(name, value)
+  })
+  return to
+}
+
 export async function middleware(req: NextRequest) {
+  // Keep Supabase Auth cookies fresh on matched routes
+  const supabaseResponse = await updateSession(req)
+
   const { pathname } = req.nextUrl
 
-  // Role dashboards under /dashboard/* require JWT
-  if (!pathname.startsWith('/dashboard')) {
-    return NextResponse.next()
+  if (!isProtectedPath(pathname)) {
+    return supabaseResponse
   }
 
   const token = req.cookies.get(AUTH_COOKIE)?.value
@@ -24,27 +45,34 @@ export async function middleware(req: NextRequest) {
     const url = req.nextUrl.clone()
     url.pathname = '/login'
     url.searchParams.set('next', pathname)
-    return NextResponse.redirect(url)
+    return copyCookies(supabaseResponse, NextResponse.redirect(url))
   }
 
   const payload = await verifyToken(token)
   if (!payload) {
     const url = req.nextUrl.clone()
     url.pathname = '/login'
-    const res = NextResponse.redirect(url)
+    url.searchParams.set('next', pathname)
+    const res = copyCookies(supabaseResponse, NextResponse.redirect(url))
     res.cookies.set(AUTH_COOKIE, '', { path: '/', maxAge: 0 })
     return res
   }
 
-  if (!allowedDashboard(payload.role, pathname)) {
+  if (!allowedPath(payload.role, pathname)) {
     const url = req.nextUrl.clone()
     url.pathname = ROLE_HOME[payload.role]
-    return NextResponse.redirect(url)
+    return copyCookies(supabaseResponse, NextResponse.redirect(url))
   }
 
-  return NextResponse.next()
+  return supabaseResponse
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*'],
+  matcher: [
+    /*
+     * Match all request paths except static assets.
+     * Needed so Supabase can refresh the session on page navigations.
+     */
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+  ],
 }
