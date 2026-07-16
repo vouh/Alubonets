@@ -4,7 +4,7 @@ import { cookies } from 'next/headers'
 import { createClient } from '@/utils/supabase/server'
 import { createServerClient as createServiceClient } from '@/lib/supabase-server'
 import { prisma } from '@/lib/prisma'
-import { syncAppMetadata } from '@/lib/auth/session'
+import { syncUserMetadata } from '@/lib/auth/session'
 import { toAuthUser } from '@/lib/auth/helpers'
 
 const bodySchema = z.object({
@@ -40,7 +40,12 @@ export async function POST(req: Request) {
       password,
       email_confirm: true,
       user_metadata: { full_name: fullName },
-      app_metadata: { role: 'MEMBER', status: 'PENDING' },
+      app_metadata: {
+        role: 'MEMBER',
+        status: 'PENDING',
+        isSuperAdmin: false,
+        dashboardAccess: [],
+      },
     })
 
     if (error || !created.user) {
@@ -59,6 +64,8 @@ export async function POST(req: Request) {
             phone: phone || existing.phone,
             role: 'MEMBER',
             status: 'PENDING',
+            isSuperAdmin: false,
+            dashboardAccess: [],
           },
         })
       : await prisma.user.create({
@@ -69,10 +76,12 @@ export async function POST(req: Request) {
             phone,
             role: 'MEMBER',
             status: 'PENDING',
+            isSuperAdmin: false,
+            dashboardAccess: [],
           },
         })
 
-    await syncAppMetadata(created.user.id, 'MEMBER', 'PENDING')
+    await syncUserMetadata(profile)
 
     // Optional: sign them in so they land on /pending
     const cookieStore = await cookies()

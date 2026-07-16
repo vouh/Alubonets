@@ -19,11 +19,33 @@ async function main() {
 
   const admin = await prisma.user.create({
     data: {
-      email: 'admin@alubonets.com',
-      fullName: 'System Administrator',
+      email: 'superadmin@alubonets.com',
+      fullName: 'Super Administrator',
       phone: '+254700000001',
       role: Role.ADMIN,
       status: MemberStatus.ACTIVE,
+      isSuperAdmin: true,
+      dashboardAccess: [
+        Role.ADMIN,
+        Role.EXECUTIVE,
+        Role.TREASURER,
+        Role.SECRETARY,
+        Role.ORGANIZER,
+        Role.MEMBER,
+      ],
+    },
+  })
+
+  // Optional secondary admin (same powers except Super) — delete later if unused
+  await prisma.user.create({
+    data: {
+      email: 'admin@alubonets.com',
+      fullName: 'System Administrator',
+      phone: '+254700000002',
+      role: Role.ADMIN,
+      status: MemberStatus.ACTIVE,
+      isSuperAdmin: false,
+      dashboardAccess: [Role.ADMIN],
     },
   })
 
@@ -207,7 +229,8 @@ async function main() {
   })
 
   console.log('Seed complete.')
-  console.log('Profile emails (link authUserId after Supabase signup):')
+  console.log('Profile emails (Auth via npm run db:bootstrap-auth):')
+  console.log('- superadmin@alubonets.com (ADMIN / super)')
   console.log('- admin@alubonets.com (ADMIN)')
   console.log('- member@alubonets.com (MEMBER)')
   console.log('- pending@alubonets.com (PENDING)')

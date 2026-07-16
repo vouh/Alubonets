@@ -8,10 +8,11 @@ export const metadata: Metadata = {
   },
 }
 
+/** Staff/member portal sign-in only. Public registration is via AuthModal on the site. */
 export default function LoginPage() {
   return (
     <Suspense fallback={<div className="min-h-screen bg-primary" />}>
-      <LoginForm />
+      <LoginForm title="Member Login" allowRegister={false} />
     </Suspense>
   )
 }

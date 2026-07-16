@@ -50,8 +50,11 @@ model User {
   email           String       @unique
   fullName        String
   phone           String?
+  location        String?
   role            Role         @default(MEMBER)
   status          MemberStatus @default(PENDING)
+  isSuperAdmin    Boolean      @default(false)
+  dashboardAccess Role[]       @default([])
   avatarUrl       String?
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt

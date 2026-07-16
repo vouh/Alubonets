@@ -52,7 +52,7 @@ export default function Footer() {
               <Link href="/contact" className={linkClass('/contact')}>
                 Contact
               </Link>
-              <Link href="/admin" className={linkClass('/admin')}>
+              <Link href="/admin/login" className={linkClass('/admin/login')}>
                 Admin
               </Link>
             </nav>

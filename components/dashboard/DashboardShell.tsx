@@ -6,6 +6,8 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { ADMIN_SIDEBAR_LOGO } from '@/lib/constants'
 import { logoutRequest, meRequest, type AuthUser, type Role } from '@/lib/auth/client'
 import { ROLE_LABEL } from '@/lib/auth/types'
+import DashboardNav from './DashboardNav'
+import WorkspaceSwitcher from './WorkspaceSwitcher'
 
 export type NavItem = {
   icon: string
@@ -37,7 +39,7 @@ export default function DashboardShell({ role, title, nav, children }: Props) {
   }, [])
 
   useEffect(() => {
-    meRequest().then(u => {
+    meRequest().then((u) => {
       if (!u) {
         router.replace('/login')
         return
@@ -79,6 +81,7 @@ export default function DashboardShell({ role, title, nav, children }: Props) {
     <div className="min-h-screen flex bg-background text-on-background dark:bg-[#060c1a] dark:text-blue-50">
       <aside className="bg-primary dark:bg-[#0c1e42] text-on-primary w-56 fixed left-0 top-0 h-screen flex flex-col z-50 border-r border-white/[0.08] shadow-[2px_0_16px_rgba(0,0,0,0.28)]">
         <div className="px-md pt-lg pb-md flex items-center gap-sm border-b border-white/10">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={ADMIN_SIDEBAR_LOGO}
             alt="Alubonets"
@@ -92,36 +95,7 @@ export default function DashboardShell({ role, title, nav, children }: Props) {
           </div>
         </div>
 
-        <nav className="flex-1 overflow-y-auto py-sm px-sm space-y-0.5">
-          {nav.map(link =>
-            link.active ? (
-              <a
-                key={link.label}
-                href={link.href || '#'}
-                className="flex items-center gap-sm px-sm py-[7px] rounded-lg bg-secondary-container/20 text-on-primary font-label-bold text-[13.5px]"
-              >
-                <span className="material-symbols-outlined text-[17px] text-secondary-container flex-shrink-0">
-                  {link.icon}
-                </span>
-                {link.label}
-              </a>
-            ) : (
-              <a key={link.label} href={link.href || '#'} className="sidebar-link">
-                <span className="material-symbols-outlined">{link.icon}</span>
-                {link.badge ? (
-                  <>
-                    <span className="flex-1">{link.label}</span>
-                    <span className="bg-secondary text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none">
-                      {link.badge}
-                    </span>
-                  </>
-                ) : (
-                  link.label
-                )}
-              </a>
-            )
-          )}
-        </nav>
+        <DashboardNav nav={nav} />
 
         <div className="px-md py-md border-t border-white/10 space-y-sm">
           <Link
@@ -163,6 +137,7 @@ export default function DashboardShell({ role, title, nav, children }: Props) {
             />
           </div>
           <div className="flex items-center gap-md">
+            <WorkspaceSwitcher user={user} />
             <button
               type="button"
               onClick={toggleTheme}
@@ -185,7 +160,11 @@ export default function DashboardShell({ role, title, nav, children }: Props) {
                 3
               </span>
             </button>
-            <div className="flex items-center gap-sm">
+            <Link
+              href="/profile"
+              className="flex items-center gap-sm hover:opacity-90 transition-opacity"
+              title="My profile"
+            >
               <div className="text-right hidden sm:block">
                 <p className="font-label-bold text-[12px] text-on-surface dark:text-blue-50 leading-tight">
                   {user.fullName}
@@ -195,7 +174,7 @@ export default function DashboardShell({ role, title, nav, children }: Props) {
               <div className="h-8 w-8 rounded-full border border-outline-variant bg-primary text-on-primary flex items-center justify-center font-label-bold text-[12px]">
                 {user.initials}
               </div>
-            </div>
+            </Link>
             <button
               type="button"
               onClick={onLogout}

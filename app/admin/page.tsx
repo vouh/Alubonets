@@ -1,6 +1,5 @@
-import DashboardShell, { type NavItem } from '@/components/dashboard/DashboardShell'
-import { setMemberApproval, setMemberRole } from '@/app/actions/members'
-import { actionApproveGallery } from '@/app/actions/domain'
+import DashboardShell from '@/components/dashboard/DashboardShell'
+import { ADMIN_NAV } from '@/lib/dashboard/nav'
 import { getAdminDashboardData, getContributionChartSeries } from '@/lib/data/queries'
 import {
   ApprovalStatusChart,
@@ -8,14 +7,7 @@ import {
   MemberGrowthChart,
 } from '@/components/dashboard/Charts'
 import { prisma } from '@/lib/prisma'
-
-const NAV: NavItem[] = [
-  { icon: 'dashboard', label: 'Overview', active: true },
-  { icon: 'group', label: 'Members' },
-  { icon: 'pending_actions', label: 'Approvals' },
-  { icon: 'photo_library', label: 'Gallery queue' },
-  { icon: 'admin_panel_settings', label: 'Roles' },
-]
+import Link from 'next/link'
 
 export default async function AdminPage() {
   const data = await getAdminDashboardData()
@@ -27,21 +19,27 @@ export default async function AdminPage() {
   const statusMap = Object.fromEntries(statusCounts.map((s) => [s.status, s._count]))
 
   return (
-    <DashboardShell role="ADMIN" title="Administrator" nav={NAV}>
+    <DashboardShell role="ADMIN" title="Administrator" nav={ADMIN_NAV}>
       <div className="space-y-6 p-4 md:p-6">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {[
-            { label: 'Total members', value: data.totalMembers },
-            { label: 'Active', value: data.activeMembers },
-            { label: 'Pending', value: data.pendingMembers },
+            { label: 'Total members', value: data.totalMembers, href: '/admin/members' },
+            { label: 'Active', value: data.activeMembers, href: '/admin/members' },
+            { label: 'Pending', value: data.pendingMembers, href: '/admin/approvals' },
             {
               label: 'Contributions (KES)',
               value: Math.round(data.totalContributions).toLocaleString(),
+              href: null,
             },
           ].map((s) => (
             <div key={s.label} className="rounded-xl border border-outline-variant/40 bg-surface p-4">
               <p className="text-xs text-on-surface-variant uppercase tracking-wide">{s.label}</p>
               <p className="text-2xl font-semibold mt-1">{s.value}</p>
+              {s.href && (
+                <Link href={s.href} className="text-xs text-primary mt-2 inline-block">
+                  Open →
+                </Link>
+              )}
             </div>
           ))}
         </div>
@@ -68,124 +66,33 @@ export default async function AdminPage() {
           </div>
         </div>
 
-        <section className="rounded-xl border border-outline-variant/40 bg-surface p-4">
-          <h2 className="font-semibold mb-3">Pending registrations ({data.pendingList.length})</h2>
-          <div className="space-y-2">
-            {data.pendingList.length === 0 && (
-              <p className="text-sm text-on-surface-variant">No pending members.</p>
-            )}
-            {data.pendingList.map((u) => (
-              <div
-                key={u.id}
-                className="flex flex-wrap items-center justify-between gap-2 border border-outline-variant/30 rounded-lg p-3"
-              >
-                <div>
-                  <p className="font-medium">{u.fullName}</p>
-                  <p className="text-sm text-on-surface-variant">{u.email}</p>
-                </div>
-                <div className="flex gap-2">
-                  <form
-                    action={async () => {
-                      'use server'
-                      await setMemberApproval({ userId: u.id, approve: true })
-                    }}
-                  >
-                    <button className="px-3 py-1.5 rounded-lg bg-primary text-on-primary text-sm">
-                      Approve
-                    </button>
-                  </form>
-                  <form
-                    action={async () => {
-                      'use server'
-                      await setMemberApproval({ userId: u.id, approve: false })
-                    }}
-                  >
-                    <button className="px-3 py-1.5 rounded-lg border text-sm">Reject</button>
-                  </form>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section className="rounded-xl border border-outline-variant/40 bg-surface p-4">
-          <h2 className="font-semibold mb-3">Gallery approval queue</h2>
-          <div className="space-y-2">
-            {data.galleryQueue.length === 0 && (
-              <p className="text-sm text-on-surface-variant">No pending photos.</p>
-            )}
-            {data.galleryQueue.map((g) => (
-              <div key={g.id} className="flex items-center justify-between gap-3 border rounded-lg p-3">
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium">{g.caption || g.url}</p>
-                </div>
-                <form action={actionApproveGallery}>
-                  <input type="hidden" name="id" value={g.id} />
-                  <input type="hidden" name="approve" value="true" />
-                  <button className="px-3 py-1.5 rounded-lg bg-secondary-container text-sm">
-                    Publish
-                  </button>
-                </form>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section className="rounded-xl border border-outline-variant/40 bg-surface p-4 overflow-x-auto">
-          <h2 className="font-semibold mb-3">Roles</h2>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-on-surface-variant">
-                <th className="py-2">Name</th>
-                <th>Email</th>
-                <th>Status</th>
-                <th>Role</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.allUsers.map((u) => (
-                <tr key={u.id} className="border-t border-outline-variant/30">
-                  <td className="py-2">{u.fullName}</td>
-                  <td>{u.email}</td>
-                  <td>{u.status}</td>
-                  <td>
-                    <form
-                      action={async (fd) => {
-                        'use server'
-                        await setMemberRole({
-                          userId: u.id,
-                          role: String(fd.get('role')) as
-                            | 'ADMIN'
-                            | 'EXECUTIVE'
-                            | 'TREASURER'
-                            | 'SECRETARY'
-                            | 'ORGANIZER'
-                            | 'MEMBER',
-                        })
-                      }}
-                      className="flex gap-2 items-center"
-                    >
-                      <select
-                        name="role"
-                        defaultValue={u.role}
-                        className="border rounded px-2 py-1 bg-surface"
-                      >
-                        {['ADMIN', 'EXECUTIVE', 'TREASURER', 'SECRETARY', 'ORGANIZER', 'MEMBER'].map(
-                          (r) => (
-                            <option key={r} value={r}>
-                              {r}
-                            </option>
-                          )
-                        )}
-                      </select>
-                      <button className="text-primary text-xs font-semibold">Save</button>
-                    </form>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </section>
+        <div className="grid md:grid-cols-3 gap-3">
+          <Link
+            href="/admin/approvals"
+            className="rounded-xl border border-outline-variant/40 bg-surface p-4 hover:border-primary/40 transition-colors"
+          >
+            <p className="font-semibold">Approvals</p>
+            <p className="text-sm text-on-surface-variant mt-1">
+              {data.pendingMembers} pending registration{data.pendingMembers === 1 ? '' : 's'}
+            </p>
+          </Link>
+          <Link
+            href="/admin/gallery-queue"
+            className="rounded-xl border border-outline-variant/40 bg-surface p-4 hover:border-primary/40 transition-colors"
+          >
+            <p className="font-semibold">Gallery queue</p>
+            <p className="text-sm text-on-surface-variant mt-1">
+              {data.galleryQueue.length} awaiting publish
+            </p>
+          </Link>
+          <Link
+            href="/admin/roles"
+            className="rounded-xl border border-outline-variant/40 bg-surface p-4 hover:border-primary/40 transition-colors"
+          >
+            <p className="font-semibold">Roles & access</p>
+            <p className="text-sm text-on-surface-variant mt-1">Assign primary role and dashboards</p>
+          </Link>
+        </div>
 
         <section className="rounded-xl border border-outline-variant/40 bg-surface p-4">
           <h2 className="font-semibold mb-3">Recent activity</h2>

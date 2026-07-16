@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { type FormEvent, useEffect, useState } from 'react'
 import { homeForRole, loginRequest, registerRequest } from '@/lib/auth/client'
+import { createClient } from '@/utils/supabase/client'
 
 type AuthTab = 'signin' | 'signup' | 'forgot'
 
@@ -16,10 +17,12 @@ function PasswordInput({
   placeholder,
   value,
   onChange,
+  minLength,
 }: {
   placeholder: string
   value: string
   onChange: (v: string) => void
+  minLength?: number
 }) {
   const [show, setShow] = useState(false)
   return (
@@ -31,7 +34,7 @@ function PasswordInput({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         required
-        minLength={8}
+        minLength={minLength}
       />
       <button
         type="button"
@@ -109,6 +112,25 @@ export default function AuthModal() {
     }
   }
 
+  const onGoogle = async () => {
+    setError('')
+    setLoading(true)
+    try {
+      const supabase = createClient()
+      const origin = window.location.origin
+      const { error: oauthError } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${origin}/auth/callback`,
+        },
+      })
+      if (oauthError) throw oauthError
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Google sign-in failed')
+      setLoading(false)
+    }
+  }
+
   if (!open) return null
 
   return (
@@ -156,6 +178,19 @@ export default function AuthModal() {
               {error && <p className="text-error text-[12px] text-center">{error}</p>}
               <button type="submit" className="auth-primary-btn" disabled={loading}>
                 {loading ? 'Signing in…' : 'Sign In'}
+              </button>
+              <div className="flex items-center gap-2 my-1">
+                <div className="flex-1 h-px bg-outline-variant/50" />
+                <span className="text-[11px] text-on-surface-variant">or</span>
+                <div className="flex-1 h-px bg-outline-variant/50" />
+              </div>
+              <button
+                type="button"
+                onClick={onGoogle}
+                disabled={loading}
+                className="w-full border border-outline-variant rounded-lg py-2.5 text-[13px] font-label-bold hover:bg-surface-container transition-colors disabled:opacity-60"
+              >
+                Continue with Google
               </button>
               <div className="flex items-center justify-between text-[12px] text-on-surface-variant">
                 <button type="button" onClick={() => setTab('forgot')} className="hover:text-primary">
@@ -211,18 +246,41 @@ export default function AuthModal() {
                   <label className="auth-label">
                     Password <span className="req">*</span>
                   </label>
-                  <PasswordInput placeholder="••••••" value={password} onChange={setPassword} />
+                  <PasswordInput
+                    placeholder="••••••"
+                    value={password}
+                    onChange={setPassword}
+                    minLength={8}
+                  />
                 </div>
                 <div className="flex flex-col gap-xs">
                   <label className="auth-label">
                     Confirm <span className="req">*</span>
                   </label>
-                  <PasswordInput placeholder="••••••" value={confirm} onChange={setConfirm} />
+                  <PasswordInput
+                    placeholder="••••••"
+                    value={confirm}
+                    onChange={setConfirm}
+                    minLength={8}
+                  />
                 </div>
               </div>
               {error && <p className="text-error text-[12px] text-center">{error}</p>}
               <button type="submit" className="auth-primary-btn" disabled={loading}>
                 {loading ? 'Creating…' : 'Create Account'}
+              </button>
+              <div className="flex items-center gap-2 my-1">
+                <div className="flex-1 h-px bg-outline-variant/50" />
+                <span className="text-[11px] text-on-surface-variant">or</span>
+                <div className="flex-1 h-px bg-outline-variant/50" />
+              </div>
+              <button
+                type="button"
+                onClick={onGoogle}
+                disabled={loading}
+                className="w-full border border-outline-variant rounded-lg py-2.5 text-[13px] font-label-bold hover:bg-surface-container transition-colors disabled:opacity-60"
+              >
+                Continue with Google
               </button>
               <p className="text-center text-[12px] text-on-surface-variant">
                 Already have an account?{' '}

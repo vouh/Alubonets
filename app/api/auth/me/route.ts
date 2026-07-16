@@ -14,6 +14,8 @@ export async function GET() {
       role: profile.role,
       initials: profile.initials,
       status: profile.status,
+      isSuperAdmin: profile.isSuperAdmin,
+      dashboardAccess: profile.dashboardAccess,
     },
   })
 }

@@ -4,7 +4,7 @@ import { cookies } from 'next/headers'
 import { createClient } from '@/utils/supabase/server'
 import { prisma } from '@/lib/prisma'
 import { ROLE_HOME } from '@/lib/auth/types'
-import { syncAppMetadata } from '@/lib/auth/session'
+import { syncUserMetadata } from '@/lib/auth/session'
 import { toAuthUser } from '@/lib/auth/helpers'
 
 const bodySchema = z.object({
@@ -55,8 +55,9 @@ export async function POST(req: Request) {
       })
     }
 
+    await syncUserMetadata(profile)
+
     if (profile.status === 'PENDING') {
-      await syncAppMetadata(data.user.id, profile.role, profile.status)
       return NextResponse.json({
         user: toAuthUser(profile),
         redirectTo: '/pending',
@@ -64,19 +65,32 @@ export async function POST(req: Request) {
       })
     }
 
-    if (profile.status !== 'ACTIVE') {
+    if (profile.status === 'SUSPENDED') {
       await supabase.auth.signOut()
       return NextResponse.json(
-        { error: 'Your account is not active. Contact an administrator.' },
+        {
+          error:
+            'Your account has been temporarily suspended. Please contact the group administrator.',
+        },
         { status: 403 }
       )
     }
 
-    await syncAppMetadata(data.user.id, profile.role, profile.status)
+    if (profile.status !== 'ACTIVE') {
+      await supabase.auth.signOut()
+      return NextResponse.json(
+        { error: 'Your account is not active. Please contact the group administrator.' },
+        { status: 403 }
+      )
+    }
 
     const user = toAuthUser(profile)
     return NextResponse.json({
-      user,
+      user: {
+        ...user,
+        isSuperAdmin: profile.isSuperAdmin,
+        dashboardAccess: profile.dashboardAccess,
+      },
       redirectTo: ROLE_HOME[user.role],
       status: profile.status,
     })

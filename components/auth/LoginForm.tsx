@@ -34,8 +34,15 @@ export default function LoginForm({ title = 'Member Login', allowRegister = true
   }, [router, searchParams])
 
   useEffect(() => {
-    if (searchParams.get('error') === 'inactive') {
+    const err = searchParams.get('error')
+    if (err === 'suspended') {
+      setError(
+        'Your account has been temporarily suspended. Please contact the group administrator.'
+      )
+    } else if (err === 'inactive') {
       setError('Your account is not active. Contact an administrator.')
+    } else if (err === 'oauth') {
+      setError('Google sign-in failed. Please try again or use email and password.')
     }
   }, [searchParams])
 

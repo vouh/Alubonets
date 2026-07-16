@@ -1,8 +1,14 @@
 /**
  * Creates Supabase Auth users for seeded Prisma profiles and links authUserId.
- * Default password: ChangeMe123!  (override with SEED_AUTH_PASSWORD)
  *
- * Usage: node scripts/bootstrap-auth-users.mjs
+ * Super admin password (default): SuperAdmin@2026!
+ * Other seeded accounts (default): ChangeMe123!
+ *
+ * Overrides:
+ *   SUPER_ADMIN_PASSWORD
+ *   SEED_AUTH_PASSWORD
+ *
+ * Usage: npm run db:bootstrap-auth
  */
 import { readFileSync } from 'node:fs'
 import { resolve, dirname } from 'node:path'
@@ -33,7 +39,10 @@ function loadEnvLocal() {
 
 loadEnvLocal()
 
-const password = process.env.SEED_AUTH_PASSWORD || 'ChangeMe123!'
+const SUPER_ADMIN_EMAIL = 'superadmin@alubonets.com'
+const superAdminPassword = process.env.SUPER_ADMIN_PASSWORD || 'SuperAdmin@2026!'
+const defaultPassword = process.env.SEED_AUTH_PASSWORD || 'ChangeMe123!'
+
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/rest\/v1\/?$/i, '').replace(/\/$/, '')
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
@@ -49,8 +58,20 @@ const prisma = new PrismaClient()
 
 const users = await prisma.user.findMany()
 for (const user of users) {
+  const password =
+    user.email.toLowerCase() === SUPER_ADMIN_EMAIL ? superAdminPassword : defaultPassword
+
   if (user.authUserId) {
-    console.log(`skip ${user.email} (already linked)`)
+    await admin.auth.admin.updateUserById(user.authUserId, {
+      password,
+      app_metadata: {
+        role: user.role,
+        status: user.status,
+        isSuperAdmin: user.isSuperAdmin,
+        dashboardAccess: user.dashboardAccess,
+      },
+    })
+    console.log(`updated ${user.email}`)
     continue
   }
 
@@ -64,7 +85,12 @@ for (const user of users) {
       password,
       email_confirm: true,
       user_metadata: { full_name: user.fullName },
-      app_metadata: { role: user.role, status: user.status },
+      app_metadata: {
+        role: user.role,
+        status: user.status,
+        isSuperAdmin: user.isSuperAdmin,
+        dashboardAccess: user.dashboardAccess,
+      },
     })
     if (error || !data.user) {
       console.error(`FAIL ${user.email}:`, error?.message)
@@ -73,7 +99,12 @@ for (const user of users) {
     authId = data.user.id
   } else {
     await admin.auth.admin.updateUserById(authId, {
-      app_metadata: { role: user.role, status: user.status },
+      app_metadata: {
+        role: user.role,
+        status: user.status,
+        isSuperAdmin: user.isSuperAdmin,
+        dashboardAccess: user.dashboardAccess,
+      },
       password,
     })
   }
@@ -85,5 +116,11 @@ for (const user of users) {
   console.log(`OK ${user.email} → ${authId}`)
 }
 
-console.log(`\nDefault password for seeded accounts: ${password}`)
+console.log('\n--- Seeded Auth credentials ---')
+console.log(`Super Admin: ${SUPER_ADMIN_EMAIL}`)
+console.log(`Password:    ${superAdminPassword}`)
+console.log(`Other roles: ${defaultPassword}`)
+console.log('Login at:    /admin/login  (no register)')
+console.log('Public reg:  homepage Auth modal only')
+
 await prisma.$disconnect()

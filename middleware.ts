@@ -1,26 +1,51 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
-import { ROLE_HOME, type Role } from '@/lib/auth/types'
+import {
+  ROLE_HOME,
+  allowedDashboards,
+  roleForDashboardPath,
+  type Role,
+} from '@/lib/auth/types'
 import { isAppRole, isMemberStatus } from '@/lib/auth/helpers'
 import { normalizeSupabaseUrl } from '@/lib/supabase-url'
 
 function isProtectedPath(pathname: string) {
+  if (pathname === '/admin/login' || pathname.startsWith('/admin/login/')) {
+    return false
+  }
   return (
     pathname.startsWith('/dashboard') ||
     pathname === '/admin' ||
-    pathname.startsWith('/admin/')
+    pathname.startsWith('/admin/') ||
+    pathname === '/profile' ||
+    pathname.startsWith('/profile/')
   )
 }
 
-function allowedPath(role: Role, pathname: string) {
-  if (pathname === '/admin' || pathname.startsWith('/admin/')) {
-    return role === 'ADMIN'
+function parseDashboardAccess(raw: unknown): Role[] {
+  if (!Array.isArray(raw)) return []
+  return raw.filter(isAppRole)
+}
+
+function allowedPath(
+  role: Role,
+  pathname: string,
+  opts: { isSuperAdmin?: boolean; dashboardAccess?: Role[] }
+) {
+  const target = roleForDashboardPath(pathname)
+  if (!target) return false
+
+  // /admin* requires ADMIN primary or Super Admin
+  if (target === 'ADMIN') {
+    return role === 'ADMIN' || Boolean(opts.isSuperAdmin)
   }
-  if (role === 'ADMIN') {
-    return pathname.startsWith('/dashboard')
-  }
-  const home = ROLE_HOME[role]
-  return pathname === home || pathname.startsWith(`${home}/`)
+
+  const allowed = allowedDashboards({
+    role,
+    isSuperAdmin: opts.isSuperAdmin,
+    dashboardAccess: opts.dashboardAccess,
+  })
+  return allowed.includes(target)
 }
 
 export async function middleware(req: NextRequest) {
@@ -67,7 +92,8 @@ export async function middleware(req: NextRequest) {
 
   if (!user) {
     const url = req.nextUrl.clone()
-    url.pathname = '/login'
+    const isAdminPath = pathname === '/admin' || pathname.startsWith('/admin/')
+    url.pathname = isAdminPath ? '/admin/login' : '/login'
     url.searchParams.set('next', pathname)
     return redirectWithCookies(url)
   }
@@ -76,22 +102,35 @@ export async function middleware(req: NextRequest) {
   const status = isMemberStatus(user.app_metadata?.status)
     ? user.app_metadata.status
     : null
+  const isSuperAdmin = Boolean(user.app_metadata?.isSuperAdmin)
+  const dashboardAccess = parseDashboardAccess(user.app_metadata?.dashboardAccess)
 
-  // Missing claims → send to login so login route can sync metadata
   if (!role || !status) {
     const url = req.nextUrl.clone()
-    url.pathname = '/login'
+    const isAdminPath = pathname === '/admin' || pathname.startsWith('/admin/')
+    url.pathname = isAdminPath ? '/admin/login' : '/login'
     url.searchParams.set('next', pathname)
     return redirectWithCookies(url)
   }
 
   if (status === 'PENDING') {
+    if (pathname === '/profile' || pathname.startsWith('/profile/')) {
+      return supabaseResponse
+    }
     if (pathname !== '/pending') {
       const url = req.nextUrl.clone()
       url.pathname = '/pending'
       return redirectWithCookies(url)
     }
     return supabaseResponse
+  }
+
+  if (status === 'SUSPENDED') {
+    const url = req.nextUrl.clone()
+    url.pathname = '/login'
+    url.searchParams.set('error', 'suspended')
+    await supabase.auth.signOut()
+    return redirectWithCookies(url)
   }
 
   if (status !== 'ACTIVE') {
@@ -108,7 +147,12 @@ export async function middleware(req: NextRequest) {
     return redirectWithCookies(url)
   }
 
-  if (!allowedPath(role, pathname)) {
+  // Shared profile for every authenticated member / staff role
+  if (pathname === '/profile' || pathname.startsWith('/profile/')) {
+    return supabaseResponse
+  }
+
+  if (!allowedPath(role, pathname, { isSuperAdmin, dashboardAccess })) {
     const url = req.nextUrl.clone()
     url.pathname = ROLE_HOME[role]
     return redirectWithCookies(url)
