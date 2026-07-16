@@ -90,8 +90,11 @@ erDiagram
 
   meetings {
     string id PK
-    string recordedBy FK
+    string title
+    enum status
     datetime heldAt
+    string recordedBy FK
+    string publishedDocumentId FK
   }
 
   audit_logs {
@@ -105,6 +108,8 @@ erDiagram
     string userId FK
     string toEmail
   }
+
+  documents ||--o| meetings : "publishedMinutes"
 ```
 
 ---
@@ -118,6 +123,7 @@ erDiagram
 | `ProjectStatus` | `UPCOMING`, `ONGOING`, `COMPLETED` | `projects.status` |
 | `WelfareStatus` | `PENDING`, `APPROVED`, `REJECTED`, `PAID` | `welfare_requests.status` |
 | `PaymentMethod` | `CASH`, `MPESA`, `BANK`, `OTHER` | `contributions.paymentMethod` |
+| `MeetingStatus` | `DRAFT`, `FINAL` | `meetings.status` |
 
 ---
 
@@ -264,17 +270,34 @@ Private Storage bucket `documents` (see `storage.sql`); signed URLs for download
 
 ### `meetings` (model `Meeting`)
 
+Structured minutes live here as **text** (source of truth). PDFs are generated on demand from this row; an optional published PDF is stored in the `documents` bucket.
+
 | Column | Type | Notes |
 |--------|------|--------|
 | `id` | String | PK |
 | `title` | String | |
-| `agenda` / `minutes` | String? | |
-| `heldAt` | DateTime | |
-| `attendance` | Int | Default 0 |
+| `opening` | String? | Call to order / opening notes |
+| `agenda` | String? | |
+| `minutes` | String? | Discussion body |
+| `attendees` | String? | Names list |
+| `resolutions` | String? | Decisions |
+| `location` | String? | Venue |
+| `nextMeetingAt` | DateTime? | |
+| `status` | MeetingStatus | `DRAFT` (editable) or `FINAL` (published) |
+| `heldAt` | DateTime | Meeting datetime |
+| `attendance` | Int | Headcount (default 0) |
 | `recordedBy` | String FK → users | Secretary / admin |
+| `publishedDocumentId` | String? unique FK → documents | Official PDF library entry |
 | `createdAt` / `updatedAt` | DateTime | |
 
-Export: `/api/export/meetings` (DOCX).
+**Flows:**
+
+1. Secretary edits at `/dashboard/secretary/meetings/[id]` (letterhead preview).
+2. **Download PDF** anytime → `GET /api/pdf/minutes/[id]` (pdf-lib from current DB text; not stored).
+3. **Mark final & publish** → upload `minutes/{id}.pdf` to Storage bucket `documents` → create/update `documents` row (`category: Minutes`) → set `status = FINAL`.
+4. Bulk DOCX still: `/api/export/meetings`.
+
+Members may download PDF only when `status = FINAL`. Staff (Secretary / Admin / Executive) may download drafts.
 
 ---
 

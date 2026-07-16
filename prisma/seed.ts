@@ -212,9 +212,30 @@ async function main() {
     data: {
       title: 'January Executive Meeting',
       agenda: 'Budget review, welfare backlog, upcoming events',
-      minutes: 'Budget approved. Two welfare cases escalated to treasurer.',
+      opening: 'The Chair called the meeting to order at 10:00.',
+      minutes:
+        'Budget for Q1 approved. Two welfare cases escalated to the treasurer for review.',
+      resolutions: '1. Approve Q1 budget.\n2. Escalate welfare cases within 14 days.',
+      location: 'Alubonets Hall, Nairobi',
+      attendees: 'Executive Chair, Treasurer, Secretary, Organizer, and 8 members',
+      nextMeetingAt: new Date('2026-02-17'),
+      status: 'FINAL',
       heldAt: new Date('2026-01-20'),
       attendance: 12,
+      recordedBy: secretary.id,
+    },
+  })
+
+  await prisma.meeting.create({
+    data: {
+      title: 'February Planning Draft',
+      agenda: 'Events calendar, gallery drive',
+      opening: 'Draft notes — not yet finalized.',
+      minutes: 'Organizer to propose three community events.',
+      location: 'Virtual',
+      status: 'DRAFT',
+      heldAt: new Date('2026-02-10'),
+      attendance: 6,
       recordedBy: secretary.id,
     },
   })

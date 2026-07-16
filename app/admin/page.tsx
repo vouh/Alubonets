@@ -66,7 +66,16 @@ export default async function AdminPage() {
           </div>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-3">
+        <div className="grid md:grid-cols-4 gap-3">
+          <Link
+            href="/profile"
+            className="rounded-xl border border-outline-variant/40 bg-surface p-4 hover:border-primary/40 transition-colors"
+          >
+            <p className="font-semibold">My profile</p>
+            <p className="text-sm text-on-surface-variant mt-1">
+              Name, photo, contributions summary
+            </p>
+          </Link>
           <Link
             href="/admin/approvals"
             className="rounded-xl border border-outline-variant/40 bg-surface p-4 hover:border-primary/40 transition-colors"

@@ -13,7 +13,7 @@ export default function WorkspaceSwitcher({ user }: Props) {
   const workspaces = allowedDashboards({
     role: user.role,
     isSuperAdmin: user.isSuperAdmin,
-    dashboardAccess: user.dashboardAccess,
+    dashboardAccess: user.dashboardAccess ?? [],
   })
 
   if (workspaces.length <= 1) return null

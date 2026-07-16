@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Sora, Inter } from 'next/font/google'
+import { Sora, Inter, Orbitron } from 'next/font/google'
 import './globals.css'
 
 const sora = Sora({
@@ -14,6 +14,13 @@ const inter = Inter({
   weight: ['400', '500', '600'],
   display: 'swap',
   variable: '--font-inter',
+})
+
+const orbitron = Orbitron({
+  subsets: ['latin'],
+  weight: ['500', '600'],
+  display: 'swap',
+  variable: '--font-orbitron',
 })
 
 export const metadata: Metadata = {
@@ -35,7 +42,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body
-        className={`${sora.variable} ${inter.variable} bg-background text-on-background font-body-md text-body-md antialiased min-h-screen flex flex-col`}
+        className={`${sora.variable} ${inter.variable} ${orbitron.variable} bg-background text-on-background font-body-md text-body-md antialiased min-h-screen flex flex-col`}
       >
         {children}
       </body>

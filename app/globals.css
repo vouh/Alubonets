@@ -499,7 +499,57 @@ textarea.contact-field-modern {
   flex-shrink: 0;
 }
 
+@keyframes theme-loader-bounce {
+  0%, 80%, 100% {
+    transform: translateY(0) scale(0.85);
+    opacity: 0.45;
+  }
+  40% {
+    transform: translateY(-10px) scale(1);
+    opacity: 1;
+  }
+}
+
+.theme-loader-dot {
+  animation: theme-loader-bounce 1.05s ease-in-out infinite;
+  box-shadow: 0 0 12px rgba(254, 128, 21, 0.55);
+}
+.theme-loader-dot-2 {
+  animation-delay: 0.15s;
+}
+.theme-loader-dot-3 {
+  animation-delay: 0.3s;
+}
+
+/* Compact one-line digital date — Orbitron, bright navy */
+.live-date-badge {
+  display: inline-block;
+  font-family: var(--font-orbitron), ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  line-height: 1;
+  white-space: nowrap;
+  padding: 6px 10px;
+  border-radius: 9999px;
+  border: 1px solid #001f50;
+  background: #001f50;
+  color: #b0c6ff;
+  -webkit-text-stroke: 0;
+}
+
+.dark .live-date-badge {
+  border-color: #b0c6ff;
+  background: #0c1e42;
+  color: #b0c6ff;
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .theme-loader-dot {
+    animation: none;
+    opacity: 0.85;
+    transform: none;
+  }
   .reveal, .reveal-left, .reveal-scale {
     opacity: 1;
     transform: none;

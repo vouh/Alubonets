@@ -250,11 +250,37 @@ export async function createMeeting(data: {
   title: string
   agenda?: string
   minutes?: string
+  opening?: string
+  location?: string
+  attendees?: string
+  resolutions?: string
+  nextMeetingAt?: Date
   heldAt: Date
   attendance: number
   recordedBy: string
+  status?: 'DRAFT' | 'FINAL'
 }) {
   return prisma.meeting.create({ data })
+}
+
+export async function updateMeeting(
+  id: string,
+  data: {
+    title?: string
+    agenda?: string | null
+    minutes?: string | null
+    opening?: string | null
+    location?: string | null
+    attendees?: string | null
+    resolutions?: string | null
+    nextMeetingAt?: Date | null
+    heldAt?: Date
+    attendance?: number
+    status?: 'DRAFT' | 'FINAL'
+    publishedDocumentId?: string | null
+  }
+) {
+  return prisma.meeting.update({ where: { id }, data })
 }
 
 export async function createDocument(data: {

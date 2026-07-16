@@ -1,11 +1,12 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState, type ReactNode } from 'react'
 import { ADMIN_SIDEBAR_LOGO } from '@/lib/constants'
 import { logoutRequest, meRequest, type AuthUser, type Role } from '@/lib/auth/client'
-import { ROLE_LABEL } from '@/lib/auth/types'
+import { ROLE_HOME, ROLE_LABEL } from '@/lib/auth/types'
+import ThemeLoader from '@/components/ui/ThemeLoader'
 import DashboardNav from './DashboardNav'
 import WorkspaceSwitcher from './WorkspaceSwitcher'
 
@@ -24,11 +25,37 @@ type Props = {
   children: ReactNode
 }
 
+function LiveDateBadge() {
+  const [now, setNow] = useState(() => new Date())
+
+  useEffect(() => {
+    const tick = () => setNow(new Date())
+    tick()
+    const id = window.setInterval(tick, 60_000)
+    return () => window.clearInterval(id)
+  }, [])
+
+  const weekday = now.toLocaleDateString(undefined, { weekday: 'short' }).toUpperCase()
+  const date = `${now.getDate()}/${now.getMonth() + 1}/${now.getFullYear()}`
+
+  return (
+    <time
+      dateTime={now.toISOString()}
+      className="live-date-badge shrink-0"
+      title={now.toLocaleString()}
+    >
+      {weekday} {date}
+    </time>
+  )
+}
+
 export default function DashboardShell({ role, title, nav, children }: Props) {
   const router = useRouter()
+  const pathname = usePathname()
   const [user, setUser] = useState<AuthUser | null>(null)
   const [isDark, setIsDark] = useState(false)
   const [welcome, setWelcome] = useState('')
+  const showWelcome = pathname === ROLE_HOME[role]
 
   useEffect(() => {
     const saved = localStorage.getItem('adminTheme')
@@ -52,8 +79,12 @@ export default function DashboardShell({ role, title, nav, children }: Props) {
   }, [router])
 
   useEffect(() => {
-    document.body.classList.add('overflow-hidden', 'h-full')
-    return () => document.body.classList.remove('overflow-hidden', 'h-full')
+    document.documentElement.classList.add('h-full')
+    document.body.classList.add('h-full', 'overflow-hidden')
+    return () => {
+      document.documentElement.classList.remove('h-full')
+      document.body.classList.remove('h-full', 'overflow-hidden')
+    }
   }, [])
 
   const toggleTheme = () => {
@@ -70,15 +101,11 @@ export default function DashboardShell({ role, title, nav, children }: Props) {
   }
 
   if (!user) {
-    return (
-      <div className="min-h-screen bg-background dark:bg-[#060c1a] flex items-center justify-center">
-        <p className="text-on-surface-variant text-sm">Loading dashboard…</p>
-      </div>
-    )
+    return <ThemeLoader label="Loading dashboard…" />
   }
 
   return (
-    <div className="min-h-screen flex bg-background text-on-background dark:bg-[#060c1a] dark:text-blue-50">
+    <div className="h-screen flex overflow-hidden bg-background text-on-background dark:bg-[#060c1a] dark:text-blue-50">
       <aside className="bg-primary dark:bg-[#0c1e42] text-on-primary w-56 fixed left-0 top-0 h-screen flex flex-col z-50 border-r border-white/[0.08] shadow-[2px_0_16px_rgba(0,0,0,0.28)]">
         <div className="px-md pt-lg pb-md flex items-center gap-sm border-b border-white/10">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -99,6 +126,13 @@ export default function DashboardShell({ role, title, nav, children }: Props) {
 
         <div className="px-md py-md border-t border-white/10 space-y-sm">
           <Link
+            href="/profile"
+            className="flex items-center gap-sm text-on-primary bg-white/10 hover:bg-white/15 text-[13px] font-label-bold transition-colors w-full rounded-lg px-sm py-[7px]"
+          >
+            <span className="material-symbols-outlined text-[17px]">account_circle</span>
+            My profile
+          </Link>
+          <Link
             href="/"
             className="flex items-center gap-sm text-primary-fixed-dim/60 hover:text-on-primary text-[13px] font-body-md transition-colors w-full"
           >
@@ -118,9 +152,9 @@ export default function DashboardShell({ role, title, nav, children }: Props) {
         </div>
       </aside>
 
-      <div className="ml-56 flex-1 flex flex-col min-h-screen min-w-0">
+      <div className="ml-56 flex-1 flex flex-col h-screen min-h-0 min-w-0">
         <header
-          className="bg-surface-container-lowest dark:bg-[#0d1729] border-b border-outline-variant dark:border-[#1a2d4f] sticky top-0 z-40 flex items-center justify-between px-lg"
+          className="bg-surface-container-lowest dark:bg-[#0d1729] border-b border-outline-variant dark:border-[#1a2d4f] shrink-0 z-40 flex items-center justify-between px-lg"
           style={{ height: 52 }}
         >
           <div className="relative flex-1 max-w-xs">
@@ -189,17 +223,17 @@ export default function DashboardShell({ role, title, nav, children }: Props) {
           </div>
         </header>
 
-        <main className="flex-1 p-lg space-y-lg overflow-y-auto">
-          <div className="flex items-center justify-between">
+        <main className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-lg space-y-lg">
+          <div className="flex items-start justify-between shrink-0 -mt-1">
             <div>
               <h1 className="font-h2 text-h2 text-primary dark:text-primary-fixed-dim">{title}</h1>
-              <p className="font-body-md text-body-md text-on-surface-variant dark:text-blue-200/60 mt-xs">
-                {welcome}
-              </p>
+              {showWelcome && welcome ? (
+                <p className="font-body-md text-body-md text-on-surface-variant dark:text-blue-200/60 mt-xs">
+                  {welcome}
+                </p>
+              ) : null}
             </div>
-            <span className="font-caption text-caption text-on-surface-variant bg-surface-container dark:bg-[#0d1729] px-md py-xs rounded-full border border-outline-variant dark:border-[#1a2d4f]">
-              July 2026
-            </span>
+            <LiveDateBadge />
           </div>
           {children}
         </main>

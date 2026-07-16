@@ -135,6 +135,7 @@ Without Daraja env vars, STK stays inactive; the rest of finance still works.
 | Contribution receipt | `/api/pdf/receipt/[id]` | pdf-lib — group header, member, amount, date, refs |
 | Member statement | `/api/pdf/statement/[userId]` | pdf-lib — contribution list for that member |
 | Meeting pack | `/api/export/meetings` | docx — title, date, attendance, agenda, minutes |
+| Meeting minutes PDF | `/api/pdf/minutes/[id]` | pdf-lib — letterhead from DB text; publish stores copy in `documents` bucket |
 
 Auth checks ensure members only get their own receipts/statements unless staff.
 

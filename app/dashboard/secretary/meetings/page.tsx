@@ -1,58 +1,94 @@
 import DashboardShell from '@/components/dashboard/DashboardShell'
 import { SECRETARY_NAV } from '@/lib/dashboard/nav'
-import { actionCreateMeeting } from '@/app/actions/domain'
-import { getSecretaryDashboardData } from '@/lib/data/queries'
+import { prisma } from '@/lib/prisma'
+import Link from 'next/link'
 
 export default async function SecretaryMeetingsPage() {
-  const data = await getSecretaryDashboardData()
+  const meetings = await prisma.meeting.findMany({
+    orderBy: { heldAt: 'desc' },
+    include: { publishedDocument: { select: { id: true, fileUrl: true } } },
+  })
 
   return (
     <DashboardShell role="SECRETARY" title="Meetings" nav={SECRETARY_NAV}>
       <div className="space-y-6 p-4 md:p-6">
-        <section className="rounded-xl border bg-surface p-4">
-          <h2 className="font-semibold mb-3">Record meeting</h2>
-          <form action={actionCreateMeeting} className="grid gap-3 md:grid-cols-2">
-            <input name="title" placeholder="Title" required className="border rounded-lg px-3 py-2" />
-            <input name="heldAt" type="datetime-local" required className="border rounded-lg px-3 py-2" />
-            <input
-              name="attendance"
-              type="number"
-              placeholder="Attendance"
-              className="border rounded-lg px-3 py-2"
-            />
-            <textarea
-              name="agenda"
-              placeholder="Agenda"
-              className="border rounded-lg px-3 py-2 md:col-span-2"
-            />
-            <textarea
-              name="minutes"
-              placeholder="Minutes"
-              className="border rounded-lg px-3 py-2 md:col-span-2"
-            />
-            <button className="bg-primary text-on-primary rounded-lg px-4 py-2 md:col-span-2">
-              Save meeting
-            </button>
-          </form>
-        </section>
-
-        <section className="rounded-xl border bg-surface p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="font-semibold">Meetings</h2>
-            <a href="/api/export/meetings" className="text-sm text-primary underline">
-              Export DOCX
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-on-surface-variant max-w-xl">
+            Draft minutes as structured text, preview the letterhead, download a PDF anytime, and
+            publish a Final copy to the documents library.
+          </p>
+          <div className="flex gap-2">
+            <a
+              href="/api/export/meetings"
+              className="px-3 py-2 rounded-lg border text-sm font-label-bold"
+            >
+              Export all DOCX
             </a>
+            <Link
+              href="/dashboard/secretary/meetings/new"
+              className="px-4 py-2 rounded-full bg-primary text-on-primary text-sm font-label-bold"
+            >
+              New meeting
+            </Link>
           </div>
-          <ul className="space-y-2 text-sm">
-            {data.meetings.map((m) => (
-              <li key={m.id} className="border-b pb-2">
-                <p className="font-medium">
-                  {m.title} · {m.heldAt.toLocaleDateString()} · {m.attendance} present
-                </p>
-                {m.minutes && <p className="text-on-surface-variant">{m.minutes}</p>}
-              </li>
-            ))}
-          </ul>
+        </div>
+
+        <section className="rounded-2xl border border-outline-variant/40 bg-surface overflow-hidden">
+          {meetings.length === 0 ? (
+            <p className="p-6 text-sm text-on-surface-variant">No meetings yet.</p>
+          ) : (
+            <ul className="divide-y divide-outline-variant/40">
+              {meetings.map((m) => (
+                <li
+                  key={m.id}
+                  className="flex flex-wrap items-center justify-between gap-3 px-4 py-3.5"
+                >
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="font-medium truncate">{m.title}</p>
+                      <span
+                        className={`text-[10px] uppercase tracking-wide font-label-bold px-2 py-0.5 rounded-full ${
+                          m.status === 'FINAL'
+                            ? 'bg-primary/10 text-primary'
+                            : 'bg-surface-container text-on-surface-variant'
+                        }`}
+                      >
+                        {m.status}
+                      </span>
+                    </div>
+                    <p className="text-xs text-on-surface-variant mt-0.5">
+                      {m.heldAt.toLocaleString()}
+                      {m.location ? ` · ${m.location}` : ''} · {m.attendance} present
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Link
+                      href={`/dashboard/secretary/meetings/${m.id}`}
+                      className="text-sm text-primary font-label-bold px-2 py-1"
+                    >
+                      Open
+                    </Link>
+                    <a
+                      href={`/api/pdf/minutes/${m.id}`}
+                      className="text-sm text-on-surface-variant font-label-bold px-2 py-1"
+                    >
+                      PDF
+                    </a>
+                    {m.publishedDocument?.fileUrl && (
+                      <a
+                        href={m.publishedDocument.fileUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-sm text-on-surface-variant font-label-bold px-2 py-1"
+                      >
+                        Library
+                      </a>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
       </div>
     </DashboardShell>

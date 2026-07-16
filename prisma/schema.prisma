@@ -44,6 +44,11 @@ enum PaymentMethod {
   OTHER
 }
 
+enum MeetingStatus {
+  DRAFT
+  FINAL
+}
+
 model User {
   id              String       @id @default(cuid())
   authUserId      String?      @unique
@@ -167,20 +172,30 @@ model Document {
   uploader   User     @relation(fields: [uploadedBy], references: [id], onDelete: Cascade)
   uploadedAt DateTime @default(now())
 
+  publishedMeeting Meeting?
+
   @@map("documents")
 }
 
 model Meeting {
-  id         String   @id @default(cuid())
-  title      String
-  agenda     String?
-  minutes    String?
-  heldAt     DateTime
-  attendance Int      @default(0)
-  recordedBy String
-  recorder   User     @relation("MeetingRecorder", fields: [recordedBy], references: [id], onDelete: Cascade)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id                  String        @id @default(cuid())
+  title               String
+  agenda              String?
+  minutes             String?
+  opening             String?
+  location            String?
+  attendees           String?
+  resolutions         String?
+  nextMeetingAt       DateTime?
+  status              MeetingStatus @default(DRAFT)
+  heldAt              DateTime
+  attendance          Int           @default(0)
+  recordedBy          String
+  recorder            User          @relation("MeetingRecorder", fields: [recordedBy], references: [id], onDelete: Cascade)
+  publishedDocumentId String?       @unique
+  publishedDocument   Document?     @relation(fields: [publishedDocumentId], references: [id], onDelete: SetNull)
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
 
   @@map("meetings")
 }

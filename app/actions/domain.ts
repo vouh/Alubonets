@@ -10,7 +10,6 @@ import {
   createDocument,
   createEvent,
   createGalleryPhoto,
-  createMeeting,
   createWelfareRequest,
   updateWelfareStatus,
   upsertProject,
@@ -121,21 +120,7 @@ export async function actionCreateEvent(formData: FormData) {
   revalidatePath('/dashboard/member')
 }
 
-export async function actionCreateMeeting(formData: FormData) {
-  const actor = await requireActiveRole(['SECRETARY', 'ADMIN'])
-  const title = String(formData.get('title') || '')
-  const heldAt = String(formData.get('heldAt') || '')
-  if (!title || !heldAt) throw new Error('Title and date required')
-  await createMeeting({
-    title,
-    agenda: String(formData.get('agenda') || '') || undefined,
-    minutes: String(formData.get('minutes') || '') || undefined,
-    heldAt: new Date(heldAt),
-    attendance: Number(formData.get('attendance') || 0),
-    recordedBy: actor.id,
-  })
-  revalidatePath('/dashboard/secretary')
-}
+export { actionCreateMeeting } from '@/app/actions/meetings'
 
 export async function actionCreateDocument(formData: FormData) {
   const actor = await requireActiveRole(['SECRETARY', 'ADMIN'])

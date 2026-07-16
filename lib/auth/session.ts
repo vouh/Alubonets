@@ -111,8 +111,8 @@ export async function getSessionProfile(): Promise<SessionProfile | null> {
     ...toAuthUser(profile),
     status: profile.status,
     authUserId: profile.authUserId,
-    isSuperAdmin: profile.isSuperAdmin,
-    dashboardAccess: profile.dashboardAccess as Role[],
+    isSuperAdmin: profile.isSuperAdmin ?? false,
+    dashboardAccess: (profile.dashboardAccess ?? []) as Role[],
   }
 }
 
@@ -131,7 +131,7 @@ export async function requireActiveRole(roles?: Role[]) {
   if (profile.isSuperAdmin || profile.role === 'ADMIN') return profile
   if (roles.includes(profile.role)) return profile
   // Extra dashboard grants: allow actions for roles the user may oversee
-  if (profile.dashboardAccess.some((r) => roles.includes(r))) return profile
+  if ((profile.dashboardAccess ?? []).some((r) => roles.includes(r))) return profile
   throw new Error('Forbidden')
 }
 
