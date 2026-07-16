@@ -14,6 +14,7 @@ export const ADMIN_NAV: NavItem[] = [
   { icon: 'pending_actions', label: 'Approvals', href: '/admin/approvals' },
   { icon: 'photo_library', label: 'Gallery queue', href: '/admin/gallery-queue' },
   { icon: 'admin_panel_settings', label: 'Roles', href: '/admin/roles' },
+  { icon: 'history', label: 'Activity logs', href: '/admin/audit-logs' },
   CONTRIBUTIONS_NAV,
   PROFILE_NAV,
 ]

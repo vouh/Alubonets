@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { requireSessionProfile, syncUserMetadata } from '@/lib/auth/session'
+import { writeAudit } from '@/lib/audit'
 
 const profileSchema = z.object({
   fullName: z.string().min(2).max(120),
@@ -42,13 +43,11 @@ export async function updateMyProfile(input: z.infer<typeof profileSchema>) {
   })
 
   await syncUserMetadata(updated)
-  await prisma.auditLog.create({
-    data: {
-      userId: session.id,
-      action: 'PROFILE_UPDATE',
-      entity: 'User',
-      entityId: session.id,
-    },
+  await writeAudit({
+    userId: session.id,
+    action: 'PROFILE_UPDATE',
+    entity: 'User',
+    entityId: session.id,
   })
 
   revalidatePath('/profile')

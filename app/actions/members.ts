@@ -7,6 +7,7 @@ import { requireAdmin, syncUserMetadata } from '@/lib/auth/session'
 import { sendMemberApprovedEmail } from '@/lib/email/resend'
 import type { Role } from '@prisma/client'
 import { ALL_ROLES } from '@/lib/auth/types'
+import { writeAudit } from '@/lib/audit'
 
 const approveSchema = z.object({
   userId: z.string().min(1),
@@ -41,6 +42,7 @@ function revalidateAdmin() {
   revalidatePath('/admin/approvals')
   revalidatePath('/admin/roles')
   revalidatePath('/admin/gallery-queue')
+  revalidatePath('/admin/audit-logs')
 }
 
 export async function setMemberApproval(input: z.infer<typeof approveSchema>) {
@@ -58,13 +60,11 @@ export async function setMemberApproval(input: z.infer<typeof approveSchema>) {
 
   await syncUserMetadata(updated)
 
-  await prisma.auditLog.create({
-    data: {
-      userId: actor.id,
-      action: approve ? 'MEMBER_APPROVE' : 'MEMBER_REJECT',
-      entity: 'User',
-      entityId: userId,
-    },
+  await writeAudit({
+    userId: actor.id,
+    action: approve ? 'MEMBER_APPROVE' : 'MEMBER_REJECT',
+    entity: 'User',
+    entityId: userId,
   })
 
   if (approve) {
@@ -101,14 +101,12 @@ export async function setMemberRole(input: z.infer<typeof roleSchema>) {
 
   await syncUserMetadata(updated)
 
-  await prisma.auditLog.create({
-    data: {
-      userId: actor.id,
-      action: 'MEMBER_ROLE_CHANGE',
-      entity: 'User',
-      entityId: userId,
-      meta: { role },
-    },
+  await writeAudit({
+    userId: actor.id,
+    action: 'MEMBER_ROLE_CHANGE',
+    entity: 'User',
+    entityId: userId,
+    meta: { role },
   })
 
   revalidateAdmin()
@@ -132,14 +130,12 @@ export async function setMemberDashboardAccess(input: z.infer<typeof accessSchem
 
   await syncUserMetadata(updated)
 
-  await prisma.auditLog.create({
-    data: {
-      userId: actor.id,
-      action: 'MEMBER_DASHBOARD_ACCESS',
-      entity: 'User',
-      entityId: userId,
-      meta: { dashboardAccess },
-    },
+  await writeAudit({
+    userId: actor.id,
+    action: 'MEMBER_DASHBOARD_ACCESS',
+    entity: 'User',
+    entityId: userId,
+    meta: { dashboardAccess },
   })
 
   revalidateAdmin()
@@ -172,14 +168,12 @@ export async function setMemberStatus(input: z.infer<typeof statusSchema>) {
 
   await syncUserMetadata(updated)
 
-  await prisma.auditLog.create({
-    data: {
-      userId: actor.id,
-      action: status === 'SUSPENDED' ? 'MEMBER_SUSPEND' : 'MEMBER_STATUS_CHANGE',
-      entity: 'User',
-      entityId: userId,
-      meta: { status },
-    },
+  await writeAudit({
+    userId: actor.id,
+    action: status === 'SUSPENDED' ? 'MEMBER_SUSPEND' : 'MEMBER_STATUS_CHANGE',
+    entity: 'User',
+    entityId: userId,
+    meta: { status },
   })
 
   revalidateAdmin()
@@ -214,14 +208,12 @@ export async function setSuperAdminFlag(input: z.infer<typeof superSchema>) {
 
   await syncUserMetadata(updated)
 
-  await prisma.auditLog.create({
-    data: {
-      userId: actor.id,
-      action: 'SUPER_ADMIN_FLAG',
-      entity: 'User',
-      entityId: userId,
-      meta: { isSuperAdmin },
-    },
+  await writeAudit({
+    userId: actor.id,
+    action: 'SUPER_ADMIN_FLAG',
+    entity: 'User',
+    entityId: userId,
+    meta: { isSuperAdmin },
   })
 
   revalidateAdmin()

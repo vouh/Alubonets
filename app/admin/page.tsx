@@ -8,6 +8,7 @@ import {
 } from '@/components/dashboard/Charts'
 import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
+import { formatAuditAction } from '@/lib/audit-labels'
 
 export default async function AdminPage() {
   const data = await getAdminDashboardData()
@@ -104,17 +105,29 @@ export default async function AdminPage() {
         </div>
 
         <section className="rounded-xl border border-outline-variant/40 bg-surface p-4">
-          <h2 className="font-semibold mb-3">Recent activity</h2>
+          <div className="flex items-center justify-between mb-3 gap-3">
+            <h2 className="font-semibold">Recent activity</h2>
+            <Link
+              href="/admin/audit-logs"
+              className="text-sm font-label-bold text-secondary-container hover:opacity-80"
+            >
+              View all →
+            </Link>
+          </div>
           <ul className="space-y-2 text-sm">
-            {data.recentAudit.map((a) => (
-              <li key={a.id} className="border-b border-outline-variant/20 pb-2">
-                <span className="font-medium">{a.action}</span>
-                <span className="text-on-surface-variant">
-                  {' '}
-                  by {a.user.fullName} · {a.createdAt.toLocaleString()}
-                </span>
-              </li>
-            ))}
+            {data.recentAudit.length === 0 ? (
+              <li className="text-on-surface-variant">No activity yet.</li>
+            ) : (
+              data.recentAudit.map((a) => (
+                <li key={a.id} className="border-b border-outline-variant/20 pb-2">
+                  <span className="font-medium">{formatAuditAction(a.action)}</span>
+                  <span className="text-on-surface-variant">
+                    {' '}
+                    by {a.user.fullName} · {a.createdAt.toLocaleString()}
+                  </span>
+                </li>
+              ))
+            )}
           </ul>
         </section>
 

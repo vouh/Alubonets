@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSessionProfile } from '@/lib/auth/session'
 import { mpesaConfigured, stkPush } from '@/lib/mpesa/daraja'
 import { prisma } from '@/lib/prisma'
+import { writeAudit } from '@/lib/audit'
 
 export async function POST(req: NextRequest) {
   const profile = await getSessionProfile()
@@ -55,17 +56,15 @@ export async function POST(req: NextRequest) {
     description: 'Alubonets',
   })
 
-  await prisma.auditLog.create({
-    data: {
-      userId: profile.id,
-      action: 'MPESA_STK_INIT',
-      entity: 'Contribution',
-      meta: {
-        checkoutRequestId: result.CheckoutRequestID,
-        merchantRequestId: result.MerchantRequestID,
-        targetUserId: userId,
-        amount,
-      },
+  await writeAudit({
+    userId: profile.id,
+    action: 'MPESA_STK_INIT',
+    entity: 'Contribution',
+    meta: {
+      checkoutRequestId: result.CheckoutRequestID,
+      merchantRequestId: result.MerchantRequestID,
+      targetUserId: userId,
+      amount,
     },
   })
 

@@ -16,6 +16,7 @@ import {
 } from '@/lib/data/queries'
 import { prisma } from '@/lib/prisma'
 import { sendContributionReceiptEmail, sendWelfareStatusEmail } from '@/lib/email/resend'
+import { writeAudit } from '@/lib/audit'
 
 export async function actionCreateContribution(formData: FormData) {
   const actor = await requireActiveRole(['TREASURER', 'ADMIN'])
@@ -44,13 +45,11 @@ export async function actionCreateContribution(formData: FormData) {
   const member = await prisma.user.findUnique({ where: { id: parsed.userId } })
   if (member) await sendContributionReceiptEmail(member, parsed.amount, parsed.mpesaRef)
 
-  await prisma.auditLog.create({
-    data: {
-      userId: actor.id,
-      action: 'CONTRIBUTION_CREATE',
-      entity: 'Contribution',
-      entityId: row.id,
-    },
+  await writeAudit({
+    userId: actor.id,
+    action: 'CONTRIBUTION_CREATE',
+    entity: 'Contribution',
+    entityId: row.id,
   })
 
   revalidatePath('/dashboard/treasurer')
@@ -80,14 +79,12 @@ export async function actionReviewWelfare(formData: FormData) {
   }
   const updated = await updateWelfareStatus(id, status, reviewNote)
   await sendWelfareStatusEmail(updated.user, status, reviewNote)
-  await prisma.auditLog.create({
-    data: {
-      userId: actor.id,
-      action: 'WELFARE_REVIEW',
-      entity: 'WelfareRequest',
-      entityId: id,
-      meta: { status },
-    },
+  await writeAudit({
+    userId: actor.id,
+    action: 'WELFARE_REVIEW',
+    entity: 'WelfareRequest',
+    entityId: id,
+    meta: { status },
   })
   revalidatePath('/dashboard/treasurer')
   revalidatePath('/dashboard/member')
@@ -213,13 +210,11 @@ export async function actionImportContributionsCsv(csvText: string) {
     created += 1
   }
 
-  await prisma.auditLog.create({
-    data: {
-      userId: actor.id,
-      action: 'CONTRIBUTION_CSV_IMPORT',
-      entity: 'Contribution',
-      meta: { created },
-    },
+  await writeAudit({
+    userId: actor.id,
+    action: 'CONTRIBUTION_CSV_IMPORT',
+    entity: 'Contribution',
+    meta: { created },
   })
 
   revalidatePath('/dashboard/treasurer')

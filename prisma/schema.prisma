@@ -225,5 +225,7 @@ model AuditLog {
   createdAt DateTime @default(now())
 
   @@index([userId])
+  @@index([createdAt])
+  @@index([entity, entityId])
   @@map("audit_logs")
 }

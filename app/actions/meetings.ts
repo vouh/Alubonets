@@ -7,6 +7,7 @@ import { createMeeting, updateMeeting } from '@/lib/data/queries'
 import { prisma } from '@/lib/prisma'
 import { buildMeetingMinutesPdf, minutesFilename } from '@/lib/pdf/minutes'
 import { createServerClient } from '@/lib/supabase-server'
+import { writeAudit } from '@/lib/audit'
 
 function revalidateMeetings() {
   revalidatePath('/dashboard/secretary')
@@ -69,13 +70,11 @@ export async function actionCreateMeeting(formData: FormData) {
     status: 'DRAFT',
   })
 
-  await prisma.auditLog.create({
-    data: {
-      userId: actor.id,
-      action: 'MEETING_CREATE',
-      entity: 'Meeting',
-      entityId: meeting.id,
-    },
+  await writeAudit({
+    userId: actor.id,
+    action: 'MEETING_CREATE',
+    entity: 'Meeting',
+    entityId: meeting.id,
   })
 
   revalidateMeetings()
@@ -116,13 +115,11 @@ export async function actionUpdateMeeting(formData: FormData) {
     nextMeetingAt: parseNextMeeting(parsed.nextMeetingAt),
   })
 
-  await prisma.auditLog.create({
-    data: {
-      userId: actor.id,
-      action: 'MEETING_UPDATE',
-      entity: 'Meeting',
-      entityId: id,
-    },
+  await writeAudit({
+    userId: actor.id,
+    action: 'MEETING_UPDATE',
+    entity: 'Meeting',
+    entityId: id,
   })
 
   revalidateMeetings()
@@ -197,14 +194,12 @@ export async function actionPublishMeetingMinutes(meetingId: string) {
     publishedDocumentId: documentId,
   })
 
-  await prisma.auditLog.create({
-    data: {
-      userId: actor.id,
-      action: 'MEETING_PUBLISH',
-      entity: 'Meeting',
-      entityId: meetingId,
-      meta: { documentId, storagePath, filename },
-    },
+  await writeAudit({
+    userId: actor.id,
+    action: 'MEETING_PUBLISH',
+    entity: 'Meeting',
+    entityId: meetingId,
+    meta: { documentId, storagePath, filename },
   })
 
   revalidateMeetings()
