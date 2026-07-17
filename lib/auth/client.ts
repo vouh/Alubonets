@@ -35,7 +35,11 @@ export async function registerRequest(input: {
 }
 
 export async function logoutRequest() {
-  await fetch('/api/auth/logout', { method: 'POST' })
+  try {
+    await fetch('/api/auth/logout', { method: 'POST' })
+  } catch {
+    // Network hiccup — callers still redirect, middleware will re-check auth.
+  }
 }
 
 export async function meRequest(): Promise<AuthUser | null> {

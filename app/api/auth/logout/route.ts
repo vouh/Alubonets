@@ -5,6 +5,10 @@ import { createClient } from '@/utils/supabase/server'
 export async function POST() {
   const cookieStore = await cookies()
   const supabase = createClient(cookieStore)
-  await supabase.auth.signOut()
+  try {
+    await supabase.auth.signOut()
+  } catch {
+    // Session may already be invalid — cookies are cleared regardless.
+  }
   return NextResponse.json({ ok: true })
 }

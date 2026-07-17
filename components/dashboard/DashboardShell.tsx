@@ -131,8 +131,8 @@ export default function DashboardShell({ role, title, nav, children }: Props) {
 
   const onLogout = async () => {
     await logoutRequest()
-    router.push('/login')
-    router.refresh()
+    // Hard navigation so all client state (badge counts, cached pages) is reset.
+    window.location.href = role === 'ADMIN' ? '/admin/login' : '/login'
   }
 
   if (!user) {
