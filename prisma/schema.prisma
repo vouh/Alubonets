@@ -64,14 +64,15 @@ model User {
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 
-  contributions   Contribution[]
-  welfareRequests WelfareRequest[]
-  auditLogs       AuditLog[]
-  announcements   Announcement[]
-  documents       Document[]
-  meetings        Meeting[]      @relation("MeetingRecorder")
-  galleryPhotos   GalleryPhoto[]
-  emailLogs       EmailLog[]
+  contributions        Contribution[]
+  welfareRequests      WelfareRequest[]
+  auditLogs            AuditLog[]
+  announcements        Announcement[]
+  announcementReceipts AnnouncementReceipt[]
+  documents            Document[]
+  meetings             Meeting[]      @relation("MeetingRecorder")
+  galleryPhotos        GalleryPhoto[]
+  emailLogs            EmailLog[]
 
   @@map("users")
 }
@@ -145,10 +146,26 @@ model Announcement {
   content     String
   authorId    String
   author      User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  broadcast   Boolean  @default(true)
   publishedAt DateTime @default(now())
   createdAt   DateTime @default(now())
 
+  receipts AnnouncementReceipt[]
+
   @@map("announcements")
+}
+
+model AnnouncementReceipt {
+  id             String       @id @default(cuid())
+  announcementId String
+  announcement   Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  readAt         DateTime?
+  createdAt      DateTime     @default(now())
+
+  @@unique([announcementId, userId])
+  @@map("announcement_receipts")
 }
 
 model Event {
