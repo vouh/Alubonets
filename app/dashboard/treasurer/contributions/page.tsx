@@ -1,16 +1,91 @@
 import DashboardShell from '@/components/dashboard/DashboardShell'
 import { TREASURER_NAV } from '@/lib/dashboard/nav'
 import { actionCreateContribution } from '@/app/actions/domain'
-import { getTreasurerDashboardData } from '@/lib/data/queries'
+import {
+  getTreasurerDashboardData,
+  getContributionChartSeries,
+  getContributionAnalytics,
+} from '@/lib/data/queries'
+import {
+  BudgetDoughnutChart,
+  ContributionTrendChart,
+  PaymentMethodChart,
+  TopContributorsChart,
+} from '@/components/dashboard/Charts'
 import CsvImportForm from '@/components/dashboard/CsvImportForm'
 import MpesaStkForm from '@/components/dashboard/MpesaStkForm'
 
+export const metadata = {
+  title: 'Member contributions',
+}
+
 export default async function TreasurerContributionsPage() {
-  const data = await getTreasurerDashboardData()
+  const [data, chart, analytics] = await Promise.all([
+    getTreasurerDashboardData(),
+    getContributionChartSeries(),
+    getContributionAnalytics(),
+  ])
+
+  const catLabels = data.byCategory.map((c) => c.category || 'Uncategorized')
+  const catValues = data.byCategory.map((c) => c._sum.amount ?? 0)
+  const methodLabels = analytics.byMethod.map((m) => m.method)
+  const methodValues = analytics.byMethod.map((m) => m.total)
+  const topLabels = analytics.topContributors.map((t) => t.name)
+  const topValues = analytics.topContributors.map((t) => t.total)
+
+  const stats = [
+    { label: 'Total collected (KES)', value: Math.round(data.total).toLocaleString() },
+    { label: 'This month (KES)', value: Math.round(data.monthTotal).toLocaleString() },
+    { label: 'Records', value: data.count.toLocaleString() },
+    { label: 'Contributing members', value: analytics.contributorCount.toLocaleString() },
+  ]
 
   return (
-    <DashboardShell role="TREASURER" title="Contributions" nav={TREASURER_NAV}>
+    <DashboardShell role="TREASURER" title="Member contributions" nav={TREASURER_NAV}>
       <div className="space-y-6 p-4 md:p-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {stats.map((s) => (
+            <div key={s.label} className="rounded-xl border bg-surface p-4">
+              <p className="text-xs text-on-surface-variant uppercase">{s.label}</p>
+              <p className="text-2xl font-semibold mt-1">{s.value}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="grid lg:grid-cols-3 gap-4">
+          <div className="rounded-xl border bg-surface p-4 lg:col-span-2">
+            <h2 className="font-semibold mb-3">Monthly contribution trend</h2>
+            <ContributionTrendChart
+              labels={chart.labels.length ? chart.labels : ['—']}
+              values={chart.values.length ? chart.values : [0]}
+            />
+          </div>
+          <div className="rounded-xl border bg-surface p-4">
+            <h2 className="font-semibold mb-3">By category</h2>
+            <BudgetDoughnutChart
+              labels={catLabels.length ? catLabels : ['None']}
+              values={catValues.length ? catValues : [0]}
+            />
+          </div>
+        </div>
+
+        <div className="grid lg:grid-cols-3 gap-4">
+          <div className="rounded-xl border bg-surface p-4">
+            <h2 className="font-semibold mb-3">Payment methods</h2>
+            <PaymentMethodChart
+              labels={methodLabels.length ? methodLabels : ['None']}
+              values={methodValues.length ? methodValues : [0]}
+            />
+          </div>
+          <div className="rounded-xl border bg-surface p-4 lg:col-span-2">
+            <h2 className="font-semibold mb-3">Top contributors</h2>
+            <TopContributorsChart
+              labels={topLabels.length ? topLabels : ['None']}
+              values={topValues.length ? topValues : [0]}
+            />
+          </div>
+        </div>
+
         <section className="rounded-xl border bg-surface p-4">
           <h2 className="font-semibold mb-3">Record contribution</h2>
           <form action={actionCreateContribution} className="grid gap-3 md:grid-cols-2">

@@ -298,8 +298,7 @@ export default function AuthModal() {
             <div className="auth-tab-content flex flex-col gap-md">
               <h2 className="font-h3 text-h3 text-primary">Reset Password</h2>
               <p className="text-sm text-on-surface-variant">
-                Password reset via email can be enabled in the Supabase Auth dashboard. For now,
-                contact an administrator.
+                Please contact the group administrator and they will help you reset your password.
               </p>
               <button type="button" onClick={() => setTab('signin')} className="auth-primary-btn">
                 Back to sign in

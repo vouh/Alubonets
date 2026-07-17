@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 export default function AdminLoginPage() {
   return (
     <Suspense fallback={<div className="min-h-screen bg-primary" />}>
-      <LoginForm title="Admin Login" allowRegister={false} />
+      <LoginForm title="Admin Login" allowRegister={false} admin />
     </Suspense>
   )
 }

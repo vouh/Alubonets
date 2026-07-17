@@ -124,6 +124,47 @@ export function ContributionTrendChart({ labels, values }: SeriesProps) {
   )
 }
 
+export function PaymentMethodChart({ labels, values }: SeriesProps) {
+  return (
+    <Pie
+      data={{
+        labels,
+        datasets: [
+          {
+            data: values,
+            backgroundColor: [orange, navy, green, muted, '#e2e3e1'],
+          },
+        ],
+      }}
+      options={{ responsive: true, plugins: { legend: { position: 'bottom' } } }}
+    />
+  )
+}
+
+export function TopContributorsChart({ labels, values }: SeriesProps) {
+  return (
+    <Bar
+      data={{
+        labels,
+        datasets: [
+          {
+            label: 'KES',
+            data: values,
+            backgroundColor: navy,
+            borderRadius: 6,
+          },
+        ],
+      }}
+      options={{
+        indexAxis: 'y' as const,
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: { x: { beginAtZero: true } },
+      }}
+    />
+  )
+}
+
 export function IncomeExpenseChart({ labels, income, expense }: {
   labels: string[]
   income: number[]

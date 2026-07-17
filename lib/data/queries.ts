@@ -194,6 +194,41 @@ export async function getContributionChartSeries() {
   return { labels, values }
 }
 
+export async function getContributionAnalytics() {
+  const [byMethod, byUser] = await Promise.all([
+    prisma.contribution.groupBy({
+      by: ['paymentMethod'],
+      _sum: { amount: true },
+      _count: true,
+    }),
+    prisma.contribution.groupBy({
+      by: ['userId'],
+      _sum: { amount: true },
+      orderBy: { _sum: { amount: 'desc' } },
+    }),
+  ])
+
+  const top = byUser.slice(0, 8)
+  const users = await prisma.user.findMany({
+    where: { id: { in: top.map((u) => u.userId) } },
+    select: { id: true, fullName: true },
+  })
+  const nameById = new Map(users.map((u) => [u.id, u.fullName]))
+
+  return {
+    contributorCount: byUser.length,
+    byMethod: byMethod.map((m) => ({
+      method: m.paymentMethod,
+      total: m._sum.amount ?? 0,
+      count: m._count,
+    })),
+    topContributors: top.map((u) => ({
+      name: nameById.get(u.userId) ?? 'Unknown member',
+      total: u._sum.amount ?? 0,
+    })),
+  }
+}
+
 export type CreateContributionInput = {
   userId: string
   amount: number

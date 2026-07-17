@@ -1,7 +1,6 @@
 import type { NavItem } from '@/components/dashboard/DashboardShell'
 import type { Role } from '@/lib/auth/types'
 
-const PROFILE_NAV: NavItem = { icon: 'account_circle', label: 'My profile', href: '/profile' }
 const CONTRIBUTIONS_NAV: NavItem = {
   icon: 'payments',
   label: 'Contributions',
@@ -16,7 +15,6 @@ export const ADMIN_NAV: NavItem[] = [
   { icon: 'admin_panel_settings', label: 'Roles', href: '/admin/roles' },
   { icon: 'history', label: 'Activity logs', href: '/admin/audit-logs' },
   CONTRIBUTIONS_NAV,
-  PROFILE_NAV,
 ]
 
 export const EXECUTIVE_NAV: NavItem[] = [
@@ -24,15 +22,13 @@ export const EXECUTIVE_NAV: NavItem[] = [
   { icon: 'work', label: 'Projects', href: '/dashboard/executive/projects' },
   { icon: 'campaign', label: 'Announcements', href: '/dashboard/executive/announcements' },
   CONTRIBUTIONS_NAV,
-  PROFILE_NAV,
 ]
 
 export const TREASURER_NAV: NavItem[] = [
   { icon: 'account_balance', label: 'Finance', href: '/dashboard/treasurer' },
-  { icon: 'payments', label: 'Contributions', href: '/dashboard/treasurer/contributions' },
+  { icon: 'payments', label: 'Member contributions', href: '/dashboard/treasurer/contributions' },
   { icon: 'volunteer_activism', label: 'Welfare', href: '/dashboard/treasurer/welfare' },
   { icon: 'savings', label: 'My contributions', href: '/contributions' },
-  PROFILE_NAV,
 ]
 
 export const SECRETARY_NAV: NavItem[] = [
@@ -40,7 +36,6 @@ export const SECRETARY_NAV: NavItem[] = [
   { icon: 'campaign', label: 'Announcements', href: '/dashboard/secretary/announcements' },
   { icon: 'groups', label: 'Meetings', href: '/dashboard/secretary/meetings' },
   CONTRIBUTIONS_NAV,
-  PROFILE_NAV,
 ]
 
 export const ORGANIZER_NAV: NavItem[] = [
@@ -48,14 +43,12 @@ export const ORGANIZER_NAV: NavItem[] = [
   { icon: 'photo_library', label: 'Gallery', href: '/dashboard/organizer/gallery' },
   { icon: 'work', label: 'Projects', href: '/dashboard/organizer/projects' },
   CONTRIBUTIONS_NAV,
-  PROFILE_NAV,
 ]
 
 export const MEMBER_NAV: NavItem[] = [
   { icon: 'home', label: 'Home', href: '/dashboard/member' },
   CONTRIBUTIONS_NAV,
   { icon: 'volunteer_activism', label: 'Welfare', href: '/dashboard/member/welfare' },
-  PROFILE_NAV,
 ]
 
 export function navForRole(role: Role): NavItem[] {

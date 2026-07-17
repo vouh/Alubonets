@@ -14,7 +14,13 @@ function isNavActive(pathname: string, href: string, allHrefs: string[]) {
   return best === href
 }
 
-export default function DashboardNav({ nav }: { nav: NavItem[] }) {
+export default function DashboardNav({
+  nav,
+  collapsed = false,
+}: {
+  nav: NavItem[]
+  collapsed?: boolean
+}) {
   const pathname = usePathname()
   const hrefs = nav.map((n) => n.href || '#')
 
@@ -24,17 +30,27 @@ export default function DashboardNav({ nav }: { nav: NavItem[] }) {
         const href = link.href || '#'
         const active = isNavActive(pathname, href, hrefs)
         const className = active
-          ? 'flex items-center gap-sm px-sm py-[7px] rounded-lg bg-secondary-container/20 text-on-primary font-label-bold text-[13.5px]'
-          : 'sidebar-link'
+          ? `flex items-center gap-sm px-sm py-[7px] rounded-lg bg-secondary-container/20 text-on-primary font-label-bold text-[13.5px] ${collapsed ? 'justify-center' : ''}`
+          : `sidebar-link ${collapsed ? 'justify-center' : ''}`
 
         return (
-          <Link key={link.label} href={href} className={className}>
+          <Link
+            key={link.label}
+            href={href}
+            className={className}
+            title={collapsed ? link.label : undefined}
+          >
             <span
-              className={`material-symbols-outlined ${active ? 'text-[17px] text-secondary-container flex-shrink-0' : ''}`}
+              className={`relative material-symbols-outlined ${active ? 'text-[17px] text-secondary-container flex-shrink-0' : ''}`}
             >
               {link.icon}
+              {collapsed && link.badge ? (
+                <span className="absolute -top-1 -right-2 bg-secondary text-white text-[9px] font-bold px-1 rounded-full leading-[13px] font-sans">
+                  {link.badge}
+                </span>
+              ) : null}
             </span>
-            {link.badge ? (
+            {collapsed ? null : link.badge ? (
               <>
                 <span className="flex-1">{link.label}</span>
                 <span className="bg-secondary text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none">

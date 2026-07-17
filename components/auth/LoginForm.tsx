@@ -4,14 +4,15 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { type FormEvent, useEffect, useState } from 'react'
 import { ADMIN_LOGIN_LOGO } from '@/lib/constants'
-import { homeForRole, loginRequest, meRequest, registerRequest, type AuthUser } from '@/lib/auth/client'
+import { homeForRole, loginRequest, logoutRequest, meRequest, registerRequest, type AuthUser } from '@/lib/auth/client'
 
 type Props = {
   title?: string
   allowRegister?: boolean
+  admin?: boolean
 }
 
-export default function LoginForm({ title = 'Member Login', allowRegister = true }: Props) {
+export default function LoginForm({ title = 'Member Login', allowRegister = true, admin = false }: Props) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [mode, setMode] = useState<'signin' | 'register'>('signin')
@@ -63,6 +64,11 @@ export default function LoginForm({ title = 'Member Login', allowRegister = true
       }
       const { user, redirectTo, status } = await loginRequest(email, password)
       if (status === 'PENDING') {
+        if (admin) {
+          await logoutRequest()
+          setError('Your account is still waiting for approval by an administrator.')
+          return
+        }
         router.push('/pending')
         return
       }
@@ -91,9 +97,6 @@ export default function LoginForm({ title = 'Member Login', allowRegister = true
         <div className="bg-surface rounded-2xl pt-[52px] pb-lg px-lg shadow-2xl border border-white/10">
           <div className="text-center mb-lg">
             <h1 className="font-h3 text-h3 text-secondary-container">{title}</h1>
-            <p className="font-caption text-caption text-on-surface-variant mt-xs">
-              Secure sign-in with Supabase Auth
-            </p>
           </div>
           <form onSubmit={onSubmit} className="flex flex-col gap-md">
             {mode === 'register' && (

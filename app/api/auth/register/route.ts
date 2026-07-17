@@ -49,10 +49,11 @@ export async function POST(req: Request) {
     })
 
     if (error || !created.user) {
-      return NextResponse.json(
-        { error: error?.message || 'Could not create account.' },
-        { status: 400 }
-      )
+      const message = error?.message?.toLowerCase() ?? ''
+      const friendly = message.includes('already been registered')
+        ? 'An account with this email already exists. Please sign in instead.'
+        : 'Could not create your account. Please try again.'
+      return NextResponse.json({ error: friendly }, { status: 400 })
     }
 
     const profile = existing

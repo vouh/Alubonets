@@ -28,8 +28,31 @@ export async function POST(req: Request) {
     })
 
     if (error || !data.user) {
+      const message = error?.message?.toLowerCase() ?? ''
+      if (message.includes('email not confirmed')) {
+        return NextResponse.json(
+          {
+            error:
+              'Your email address has not been verified yet. Please check your inbox for the verification link.',
+          },
+          { status: 401 }
+        )
+      }
+      const knownProfile = await prisma.user.findUnique({
+        where: { email: parsed.data.email },
+        select: { id: true },
+      })
+      if (!knownProfile) {
+        return NextResponse.json(
+          {
+            error:
+              'We could not find an account with this email address. Please check the spelling or create an account first.',
+          },
+          { status: 401 }
+        )
+      }
       return NextResponse.json(
-        { error: error?.message || 'Invalid credentials. Please try again.' },
+        { error: 'Incorrect password. Please try again.' },
         { status: 401 }
       )
     }

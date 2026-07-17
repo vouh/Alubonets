@@ -19,7 +19,7 @@ export default async function ContributionsPage() {
 
   return (
     <DashboardShell role={role} title="My contributions" nav={navForRole(role)}>
-      <div className="max-w-3xl space-y-4 pb-10">
+      <div className="max-w-3xl mx-auto space-y-4 pb-10">
         <div className="rounded-2xl border border-outline-variant bg-surface-container-lowest p-5 flex flex-wrap items-end justify-between gap-3 border-t-4 border-t-secondary-container">
           <div>
             <p className="text-[12px] font-label-bold uppercase tracking-wide text-secondary">
