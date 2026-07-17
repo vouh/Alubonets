@@ -6,6 +6,11 @@ const CONTRIBUTIONS_NAV: NavItem = {
   label: 'Contributions',
   href: '/contributions',
 }
+const ANNOUNCEMENTS_NAV: NavItem = {
+  icon: 'campaign',
+  label: 'Announcements',
+  href: '/announcements',
+}
 
 export const ADMIN_NAV: NavItem[] = [
   { icon: 'dashboard', label: 'Overview', href: '/admin' },
@@ -14,13 +19,14 @@ export const ADMIN_NAV: NavItem[] = [
   { icon: 'photo_library', label: 'Gallery queue', href: '/admin/gallery-queue' },
   { icon: 'admin_panel_settings', label: 'Roles', href: '/admin/roles' },
   { icon: 'history', label: 'Activity logs', href: '/admin/audit-logs' },
+  ANNOUNCEMENTS_NAV,
   CONTRIBUTIONS_NAV,
 ]
 
 export const EXECUTIVE_NAV: NavItem[] = [
   { icon: 'dashboard', label: 'Overview', href: '/dashboard/executive' },
   { icon: 'work', label: 'Projects', href: '/dashboard/executive/projects' },
-  { icon: 'campaign', label: 'Announcements', href: '/dashboard/executive/announcements' },
+  ANNOUNCEMENTS_NAV,
   CONTRIBUTIONS_NAV,
 ]
 
@@ -29,11 +35,12 @@ export const TREASURER_NAV: NavItem[] = [
   { icon: 'payments', label: 'Member contributions', href: '/dashboard/treasurer/contributions' },
   { icon: 'volunteer_activism', label: 'Welfare', href: '/dashboard/treasurer/welfare' },
   { icon: 'savings', label: 'My contributions', href: '/contributions' },
+  ANNOUNCEMENTS_NAV,
 ]
 
 export const SECRETARY_NAV: NavItem[] = [
   { icon: 'description', label: 'Records', href: '/dashboard/secretary' },
-  { icon: 'campaign', label: 'Announcements', href: '/dashboard/secretary/announcements' },
+  ANNOUNCEMENTS_NAV,
   { icon: 'groups', label: 'Meetings', href: '/dashboard/secretary/meetings' },
   CONTRIBUTIONS_NAV,
 ]
@@ -42,11 +49,13 @@ export const ORGANIZER_NAV: NavItem[] = [
   { icon: 'event', label: 'Events', href: '/dashboard/organizer' },
   { icon: 'photo_library', label: 'Gallery', href: '/dashboard/organizer/gallery' },
   { icon: 'work', label: 'Projects', href: '/dashboard/organizer/projects' },
+  ANNOUNCEMENTS_NAV,
   CONTRIBUTIONS_NAV,
 ]
 
 export const MEMBER_NAV: NavItem[] = [
   { icon: 'home', label: 'Home', href: '/dashboard/member' },
+  ANNOUNCEMENTS_NAV,
   CONTRIBUTIONS_NAV,
   { icon: 'volunteer_activism', label: 'Welfare', href: '/dashboard/member/welfare' },
 ]

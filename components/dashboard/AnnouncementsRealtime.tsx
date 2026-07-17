@@ -29,7 +29,8 @@ export default function AnnouncementsRealtime({
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'announcements' },
         (payload) => {
-          const row = payload.new as AnnouncementRow
+          const row = payload.new as AnnouncementRow & { broadcast?: boolean }
+          if (row.broadcast === false) return
           setItems((prev) => [row, ...prev].slice(0, 8))
         }
       )

@@ -59,7 +59,11 @@ export async function getExecutiveDashboardData() {
     prisma.contribution.aggregate({ _sum: { amount: true } }),
     prisma.project.findMany({ orderBy: { updatedAt: 'desc' }, take: 10 }),
     prisma.event.count({ where: { startsAt: { gte: new Date() } } }),
-    prisma.announcement.findMany({ orderBy: { publishedAt: 'desc' }, take: 5 }),
+    prisma.announcement.findMany({
+      where: { broadcast: true },
+      orderBy: { publishedAt: 'desc' },
+      take: 5,
+    }),
   ])
   return {
     members,
@@ -123,6 +127,7 @@ export async function getSecretaryDashboardData() {
     }),
     prisma.meeting.findMany({ orderBy: { heldAt: 'desc' }, take: 10 }),
     prisma.announcement.findMany({
+      where: { broadcast: true },
       orderBy: { publishedAt: 'desc' },
       include: { author: { select: { fullName: true } } },
       take: 10,
@@ -152,7 +157,11 @@ export async function getMemberDashboardData(userId: string) {
       where: { userId },
       orderBy: { paidAt: 'desc' },
     }),
-    prisma.announcement.findMany({ orderBy: { publishedAt: 'desc' }, take: 5 }),
+    prisma.announcement.findMany({
+      where: { broadcast: true },
+      orderBy: { publishedAt: 'desc' },
+      take: 5,
+    }),
     prisma.event.findMany({
       where: { startsAt: { gte: new Date() } },
       orderBy: { startsAt: 'asc' },
@@ -269,6 +278,62 @@ export async function createWelfareRequest(
 
 export async function createAnnouncement(authorId: string, title: string, content: string) {
   return prisma.announcement.create({ data: { authorId, title, content } })
+}
+
+export async function sendAnnouncement(input: {
+  authorId: string
+  title: string
+  content: string
+  broadcast: boolean
+  memberIds?: string[]
+}) {
+  const recipientIds = input.broadcast
+    ? (
+        await prisma.user.findMany({
+          where: { status: 'ACTIVE', id: { not: input.authorId } },
+          select: { id: true },
+        })
+      ).map((u) => u.id)
+    : (input.memberIds ?? []).filter((id) => id !== input.authorId)
+
+  return prisma.announcement.create({
+    data: {
+      authorId: input.authorId,
+      title: input.title,
+      content: input.content,
+      broadcast: input.broadcast,
+      receipts: {
+        create: recipientIds.map((userId) => ({ userId })),
+      },
+    },
+  })
+}
+
+export async function getAnnouncementsForUser(userId: string) {
+  return prisma.announcement.findMany({
+    where: {
+      OR: [{ broadcast: true }, { receipts: { some: { userId } } }],
+    },
+    orderBy: { publishedAt: 'desc' },
+    take: 50,
+    include: {
+      author: { select: { fullName: true } },
+      receipts: { where: { userId }, select: { readAt: true } },
+    },
+  })
+}
+
+export async function getUnreadAnnouncementCount(userId: string) {
+  return prisma.announcementReceipt.count({
+    where: { userId, readAt: null },
+  })
+}
+
+export async function markAnnouncementsRead(userId: string) {
+  await prisma.announcementReceipt.updateMany({
+    where: { userId, readAt: null },
+    data: { readAt: new Date() },
+  })
 }
 
 export async function createEvent(data: {

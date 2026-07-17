@@ -20,7 +20,9 @@ function isProtectedPath(pathname: string) {
     pathname === '/profile' ||
     pathname.startsWith('/profile/') ||
     pathname === '/contributions' ||
-    pathname.startsWith('/contributions/')
+    pathname.startsWith('/contributions/') ||
+    pathname === '/announcements' ||
+    pathname.startsWith('/announcements/')
   )
 }
 
@@ -149,12 +151,14 @@ export async function middleware(req: NextRequest) {
     return redirectWithCookies(url)
   }
 
-  // Shared profile & personal contributions for every authenticated role
+  // Shared profile, personal contributions & announcements for every authenticated role
   if (
     pathname === '/profile' ||
     pathname.startsWith('/profile/') ||
     pathname === '/contributions' ||
-    pathname.startsWith('/contributions/')
+    pathname.startsWith('/contributions/') ||
+    pathname === '/announcements' ||
+    pathname.startsWith('/announcements/')
   ) {
     return supabaseResponse
   }

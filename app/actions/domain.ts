@@ -2,15 +2,16 @@
 
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
-import { requireActiveRole } from '@/lib/auth/session'
+import { requireActiveRole, requireAdmin, requireSessionProfile } from '@/lib/auth/session'
 import {
   approveGalleryPhoto,
-  createAnnouncement,
   createContribution,
   createDocument,
   createEvent,
   createGalleryPhoto,
   createWelfareRequest,
+  markAnnouncementsRead,
+  sendAnnouncement,
   updateWelfareStatus,
   upsertProject,
 } from '@/lib/data/queries'
@@ -91,15 +92,38 @@ export async function actionReviewWelfare(formData: FormData) {
   revalidatePath('/admin')
 }
 
-export async function actionCreateAnnouncement(formData: FormData) {
-  const actor = await requireActiveRole(['SECRETARY', 'ADMIN', 'EXECUTIVE'])
-  const title = String(formData.get('title') || '')
-  const content = String(formData.get('content') || '')
+export async function actionSendAnnouncement(formData: FormData) {
+  const actor = await requireAdmin()
+  const title = String(formData.get('title') || '').trim()
+  const content = String(formData.get('content') || '').trim()
+  const audience = String(formData.get('audience') || 'ALL')
+  const memberIds = formData.getAll('memberIds').map(String).filter(Boolean)
   if (!title || !content) throw new Error('Title and content required')
-  await createAnnouncement(actor.id, title, content)
-  revalidatePath('/dashboard/secretary')
+  const broadcast = audience !== 'SELECTED'
+  if (!broadcast && memberIds.length === 0) {
+    throw new Error('Select at least one member')
+  }
+  const announcement = await sendAnnouncement({
+    authorId: actor.id,
+    title,
+    content,
+    broadcast,
+    memberIds,
+  })
+  await writeAudit({
+    userId: actor.id,
+    action: 'ANNOUNCEMENT_SEND',
+    entity: 'Announcement',
+    entityId: announcement.id,
+    meta: { broadcast, recipients: broadcast ? 'all' : memberIds.length },
+  })
+  revalidatePath('/announcements')
   revalidatePath('/dashboard/member')
-  revalidatePath('/dashboard/executive')
+}
+
+export async function actionMarkAnnouncementsRead() {
+  const profile = await requireSessionProfile()
+  await markAnnouncementsRead(profile.id)
 }
 
 export async function actionCreateEvent(formData: FormData) {

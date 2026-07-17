@@ -55,12 +55,35 @@ export default function DashboardShell({ role, title, nav, children }: Props) {
   const [user, setUser] = useState<AuthUser | null>(null)
   const [isDark, setIsDark] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
+  const [unread, setUnread] = useState(0)
   const [welcome, setWelcome] = useState('')
   const showWelcome = pathname === ROLE_HOME[role]
 
   useEffect(() => {
     setCollapsed(localStorage.getItem('dashSidebarCollapsed') === '1')
   }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    const fetchUnread = async () => {
+      try {
+        const res = await fetch('/api/announcements/unread')
+        if (!res.ok) return
+        const data = await res.json()
+        if (!cancelled) setUnread(data.count ?? 0)
+      } catch {
+        // ignore — badge just keeps its last value
+      }
+    }
+    fetchUnread()
+    const id = window.setInterval(fetchUnread, 60_000)
+    window.addEventListener('announcements-read', fetchUnread)
+    return () => {
+      cancelled = true
+      window.clearInterval(id)
+      window.removeEventListener('announcements-read', fetchUnread)
+    }
+  }, [pathname])
 
   useEffect(() => {
     const saved = localStorage.getItem('adminTheme')
@@ -218,18 +241,22 @@ export default function DashboardShell({ role, title, nav, children }: Props) {
                 {isDark ? 'light_mode' : 'dark_mode'}
               </span>
             </button>
-            <button
-              type="button"
+            <Link
+              href="/announcements"
               className="relative text-on-surface-variant dark:text-blue-200/60 hover:text-primary transition-colors"
               title="Notifications"
             >
               <span className="material-symbols-outlined" style={{ fontSize: 20 }}>
                 notifications
               </span>
-              <span className="absolute -top-1 -right-1 bg-secondary text-white text-[9px] font-bold px-1 rounded-full leading-[14px]">
-                3
+              <span
+                className={`absolute -top-1 -right-1 text-white text-[9px] font-bold px-1 rounded-full leading-[14px] ${
+                  unread > 0 ? 'bg-secondary' : 'bg-outline/70'
+                }`}
+              >
+                {unread}
               </span>
-            </button>
+            </Link>
             <Link
               href="/profile"
               className="flex items-center gap-sm hover:opacity-90 transition-opacity"
