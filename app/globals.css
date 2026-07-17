@@ -415,6 +415,48 @@ textarea.contact-field-modern {
   background: #f4f4f2;
   border-color: rgba(0, 31, 80, 0.35);
 }
+/* —— Google-branded sign-in button (per screenshots/s1.png) —— */
+.google-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 5px;
+  border-radius: 10px;
+  background: #1a73e8;
+  color: #fff;
+  font-family: var(--font-inter), system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 13.5px;
+  transition:
+    background-color 0.2s ease,
+    transform 0.2s cubic-bezier(0.33, 1, 0.68, 1),
+    box-shadow 0.2s ease;
+}
+.google-btn:hover {
+  background: #1765cc;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(26, 115, 232, 0.35);
+}
+.google-btn:active {
+  transform: translateY(0) scale(0.98);
+}
+.google-btn:disabled {
+  opacity: 0.6;
+  transform: none;
+  box-shadow: none;
+}
+.google-btn-icon {
+  height: 38px;
+  width: 38px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  border-radius: 7px;
+}
+
 .auth-primary-btn {
   background: #001f50;
   color: #fff;

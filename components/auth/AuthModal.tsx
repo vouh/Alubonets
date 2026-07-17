@@ -5,6 +5,7 @@ import { type FormEvent, useEffect, useState } from 'react'
 import { homeForRole, loginRequest, registerRequest } from '@/lib/auth/client'
 import { createClient } from '@/utils/supabase/client'
 import DevAccountsDropdown from '@/components/auth/DevAccountsDropdown'
+import GoogleButton from '@/components/auth/GoogleButton'
 
 type AuthTab = 'signin' | 'signup' | 'forgot'
 
@@ -201,14 +202,7 @@ export default function AuthModal() {
                 <span className="text-[11px] text-on-surface-variant">or</span>
                 <div className="flex-1 h-px bg-outline-variant/50" />
               </div>
-              <button
-                type="button"
-                onClick={onGoogle}
-                disabled={loading}
-                className="w-full border border-outline-variant rounded-lg py-2.5 text-[13px] font-label-bold hover:bg-surface-container transition-colors disabled:opacity-60"
-              >
-                Continue with Google
-              </button>
+              <GoogleButton onClick={onGoogle} disabled={loading} />
               <div className="flex items-center justify-between text-[12px] text-on-surface-variant">
                 <button type="button" onClick={() => setTab('forgot')} className="hover:text-primary">
                   Forgot password?
@@ -291,14 +285,7 @@ export default function AuthModal() {
                 <span className="text-[11px] text-on-surface-variant">or</span>
                 <div className="flex-1 h-px bg-outline-variant/50" />
               </div>
-              <button
-                type="button"
-                onClick={onGoogle}
-                disabled={loading}
-                className="w-full border border-outline-variant rounded-lg py-2.5 text-[13px] font-label-bold hover:bg-surface-container transition-colors disabled:opacity-60"
-              >
-                Continue with Google
-              </button>
+              <GoogleButton onClick={onGoogle} disabled={loading} />
               <p className="text-center text-[12px] text-on-surface-variant">
                 Already have an account?{' '}
                 <button type="button" onClick={() => setTab('signin')} className="auth-link-accent">
