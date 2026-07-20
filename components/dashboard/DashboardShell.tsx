@@ -140,10 +140,6 @@ export default function DashboardShell({ role, title, nav, children }: Props) {
     return <ThemeLoader label="Signing out…" />
   }
 
-  if (!user) {
-    return <ThemeLoader label="Loading dashboard…" />
-  }
-
   return (
     <div className="h-screen flex overflow-hidden bg-background text-on-background dark:bg-[#060c1a] dark:text-blue-50">
       <aside
@@ -235,7 +231,7 @@ export default function DashboardShell({ role, title, nav, children }: Props) {
             </div>
           </div>
           <div className="flex items-center gap-md">
-            <WorkspaceSwitcher user={user} />
+            {user && <WorkspaceSwitcher user={user} />}
             <button
               type="button"
               onClick={toggleTheme}
@@ -262,32 +258,44 @@ export default function DashboardShell({ role, title, nav, children }: Props) {
                 {unread}
               </span>
             </Link>
-            <Link
-              href="/profile"
-              className="flex items-center gap-sm hover:opacity-90 transition-opacity"
-              title="My profile"
-            >
-              <div className="text-right hidden sm:block">
-                <p className="font-label-bold text-[12px] text-on-surface dark:text-blue-50 leading-tight">
-                  {user.fullName}
-                </p>
-                <p className="text-[10px] text-on-surface-variant">{ROLE_LABEL[user.role]}</p>
+
+            {user ? (
+              <>
+                <Link
+                  href="/profile"
+                  className="flex items-center gap-sm hover:opacity-90 transition-opacity"
+                  title="My profile"
+                >
+                  <div className="text-right hidden sm:block">
+                    <p className="font-label-bold text-[12px] text-on-surface dark:text-blue-50 leading-tight">
+                      {user.fullName}
+                    </p>
+                    <p className="text-[10px] text-on-surface-variant">{ROLE_LABEL[user.role]}</p>
+                  </div>
+                  <div className="h-8 w-8 rounded-full border border-outline-variant bg-primary text-on-primary flex items-center justify-center font-label-bold text-[12px]">
+                    {user.initials}
+                  </div>
+                </Link>
+                <button
+                  type="button"
+                  onClick={onLogout}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-secondary-container/40 bg-secondary-container text-on-primary px-md py-1.5 font-label-bold text-[12px] hover:opacity-90 active:scale-95 transition-all shadow-sm"
+                  title="Sign out"
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: 18 }}>logout</span>
+                  <span className="hidden sm:inline">Sign out</span>
+                </button>
+              </>
+            ) : (
+              <div className="flex items-center gap-sm animate-pulse">
+                <div className="hidden sm:block space-y-1.5">
+                  <div className="h-3 w-20 rounded bg-on-surface/10" />
+                  <div className="h-2.5 w-14 rounded bg-on-surface/10" />
+                </div>
+                <div className="h-8 w-8 rounded-full bg-on-surface/10" />
+                <div className="h-8 w-20 rounded-lg bg-on-surface/10 hidden sm:block" />
               </div>
-              <div className="h-8 w-8 rounded-full border border-outline-variant bg-primary text-on-primary flex items-center justify-center font-label-bold text-[12px]">
-                {user.initials}
-              </div>
-            </Link>
-            <button
-              type="button"
-              onClick={onLogout}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-secondary-container/40 bg-secondary-container text-on-primary px-md py-1.5 font-label-bold text-[12px] hover:opacity-90 active:scale-95 transition-all shadow-sm"
-              title="Sign out"
-            >
-              <span className="material-symbols-outlined" style={{ fontSize: 18 }}>
-                logout
-              </span>
-              <span className="hidden sm:inline">Sign out</span>
-            </button>
+            )}
           </div>
         </header>
 
