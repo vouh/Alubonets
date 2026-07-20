@@ -18,6 +18,7 @@ export const CONTACT_EMAIL = 'info@alubonets.com'
 export const NAV_LINKS: { href: string; label: string }[] = [
   { href: '/', label: 'Home' },
   { href: '/about', label: 'About' },
+  { href: '/events', label: 'Events' },
   { href: '/projects', label: 'Projects' },
   { href: '/gallery', label: 'Gallery' },
   { href: '/contact', label: 'Contact' },

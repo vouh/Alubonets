@@ -153,18 +153,47 @@ export async function actionMarkAnnouncementsRead() {
 }
 
 export async function actionCreateEvent(formData: FormData) {
-  await requireActiveRole(['ORGANIZER', 'ADMIN', 'SECRETARY'])
+  const actor = await requireActiveRole(['ORGANIZER', 'ADMIN', 'SECRETARY'])
   const title = String(formData.get('title') || '')
   const startsAt = String(formData.get('startsAt') || '')
   if (!title || !startsAt) throw new Error('Title and start date required')
+
+  const isPublic = formData.get('isPublic') !== 'off'
+  const sendNotif = formData.get('sendNotification') !== 'off'
+  const imageUrl = String(formData.get('imageUrl') || '') || undefined
+  const location = String(formData.get('location') || '') || undefined
+  const description = String(formData.get('description') || '') || undefined
+
   await createEvent({
     title,
-    description: String(formData.get('description') || '') || undefined,
-    location: String(formData.get('location') || '') || undefined,
+    description,
+    location,
+    imageUrl,
     startsAt: new Date(startsAt),
+    isPublic,
   })
+
+  if (sendNotif) {
+    const dateStr = new Date(startsAt).toLocaleString('en-KE', {
+      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+      hour: '2-digit', minute: '2-digit',
+    })
+    const lines = [`📅 ${dateStr}`]
+    if (location) lines.push(`📍 ${location}`)
+    if (description) lines.push(description)
+    if (!isPublic) lines.push('(Members only — not listed on the public website)')
+    await sendAnnouncement({
+      authorId: actor.id,
+      title: `New event: ${title}`,
+      content: lines.join('\n'),
+      broadcast: true,
+    })
+  }
+
   revalidatePath('/dashboard/organizer')
+  revalidatePath('/dashboard/organizer/events')
   revalidatePath('/dashboard/member')
+  revalidatePath('/events')
 }
 
 export async function actionCreateDocument(formData: FormData) {

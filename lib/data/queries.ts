@@ -342,6 +342,8 @@ export async function createEvent(data: {
   location?: string
   startsAt: Date
   endsAt?: Date
+  imageUrl?: string
+  isPublic?: boolean
 }) {
   return prisma.event.create({ data })
 }

@@ -268,12 +268,12 @@ export default function DashboardShell({ role, title, nav, children }: Props) {
                 >
                   <div className="text-right hidden sm:block">
                     <p className="font-label-bold text-[12px] text-on-surface dark:text-blue-50 leading-tight">
-                      {user.fullName}
+                      {user?.fullName}
                     </p>
-                    <p className="text-[10px] text-on-surface-variant">{ROLE_LABEL[user.role]}</p>
+                    <p className="text-[10px] text-on-surface-variant">{user?.role && ROLE_LABEL[user.role]}</p>
                   </div>
                   <div className="h-8 w-8 rounded-full border border-outline-variant bg-primary text-on-primary flex items-center justify-center font-label-bold text-[12px]">
-                    {user.initials}
+                    {user?.initials}
                   </div>
                 </Link>
                 <button

@@ -1,5 +1,7 @@
-function Pulse({ className }: { className?: string }) {
-  return <div className={`animate-pulse rounded-xl bg-gray-200 dark:bg-gray-700/50 ${className ?? ''}`} />
+import type { CSSProperties } from 'react'
+
+function Pulse({ className, style }: { className?: string; style?: CSSProperties }) {
+  return <div className={`animate-pulse rounded-xl bg-gray-200 dark:bg-gray-700/50 ${className ?? ''}`} style={style} />
 }
 
 type Props = {
