@@ -10,12 +10,11 @@ export default async function TreasurerPage() {
   const catLabels = data.byCategory.map((c) => c.category || 'Uncategorized')
   const catValues = data.byCategory.map((c) => c._sum.amount ?? 0)
 
-  const hasPendingWelfare = data.pendingWelfare.length > 0
   const stats = [
-    { label: 'Total (KES)',     value: Math.round(data.total).toLocaleString(),       icon: 'account_balance',  color: 'bg-primary dark:bg-[#0c1e42]',                                               text: 'text-on-primary',                     iconBg: 'bg-white/15' },
-    { label: 'This month',      value: Math.round(data.monthTotal).toLocaleString(),  icon: 'calendar_month',   color: 'bg-secondary dark:bg-[#c45e00]',                                             text: 'text-white',                          iconBg: 'bg-white/15' },
-    { label: 'Records',         value: data.count,                                    icon: 'receipt_long',     color: 'bg-primary/10 dark:bg-primary/20 border border-primary/20 dark:border-primary/30', text: 'text-primary dark:text-blue-200', iconBg: 'bg-primary/15 dark:bg-primary/25' },
-    { label: 'Pending welfare', value: data.pendingWelfare.length,                    icon: 'volunteer_activism', color: hasPendingWelfare ? 'bg-secondary dark:bg-[#c45e00]' : 'bg-secondary/10 dark:bg-[#c45e00]/15 border border-secondary/25', text: hasPendingWelfare ? 'text-white' : 'text-secondary dark:text-orange-300', iconBg: hasPendingWelfare ? 'bg-white/15' : 'bg-secondary/15' },
+    { label: 'Total (KES)',     value: Math.round(data.total).toLocaleString(),      icon: 'account_balance',    color: 'bg-primary dark:bg-[#0c1e42]',           text: 'text-white', iconBg: 'bg-white/15' },
+    { label: 'This month',      value: Math.round(data.monthTotal).toLocaleString(), icon: 'calendar_month',     color: 'bg-secondary-container dark:bg-[#c45e00]', text: 'text-white', iconBg: 'bg-white/15' },
+    { label: 'Records',         value: data.count,                                   icon: 'receipt_long',       color: 'bg-primary-container dark:bg-[#153060]',  text: 'text-white', iconBg: 'bg-white/15' },
+    { label: 'Pending welfare', value: data.pendingWelfare.length,                   icon: 'volunteer_activism', color: 'bg-secondary dark:bg-[#7a3a00]',          text: 'text-white', iconBg: 'bg-white/15' },
   ]
 
   const quickLinks = [

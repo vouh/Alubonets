@@ -15,12 +15,11 @@ export default async function AdminPage() {
   const statusCounts = await prisma.user.groupBy({ by: ['status'], _count: true })
   const statusMap = Object.fromEntries(statusCounts.map((s) => [s.status, s._count]))
 
-  const hasPending = data.pendingMembers > 0
   const stats = [
-    { label: 'Total members',      value: data.totalMembers,                                        icon: 'group',                  href: '/admin/members',   color: 'bg-primary dark:bg-[#0c1e42]',                                               text: 'text-on-primary',                     iconBg: 'bg-white/15' },
-    { label: 'Active',             value: data.activeMembers,                                       icon: 'verified_user',          href: '/admin/members',   color: 'bg-secondary dark:bg-[#c45e00]',                                             text: 'text-white',                          iconBg: 'bg-white/15' },
-    { label: 'Pending approval',   value: data.pendingMembers,                                      icon: 'pending_actions',        href: '/admin/approvals', color: hasPending ? 'bg-secondary dark:bg-[#c45e00]' : 'bg-secondary/10 dark:bg-[#c45e00]/15 border border-secondary/25', text: hasPending ? 'text-white' : 'text-secondary dark:text-orange-300', iconBg: hasPending ? 'bg-white/15' : 'bg-secondary/15' },
-    { label: 'Contributions (KES)', value: Math.round(data.totalContributions).toLocaleString(),   icon: 'account_balance_wallet', href: null,               color: 'bg-primary/10 dark:bg-primary/20 border border-primary/20 dark:border-primary/30', text: 'text-primary dark:text-blue-200',  iconBg: 'bg-primary/15 dark:bg-primary/25' },
+    { label: 'Total members',       value: data.totalMembers,                                    icon: 'group',                  href: '/admin/members',   color: 'bg-primary dark:bg-[#0c1e42]',           text: 'text-white', iconBg: 'bg-white/15' },
+    { label: 'Active',              value: data.activeMembers,                                   icon: 'verified_user',          href: '/admin/members',   color: 'bg-secondary-container dark:bg-[#c45e00]', text: 'text-white', iconBg: 'bg-white/15' },
+    { label: 'Pending approval',    value: data.pendingMembers,                                  icon: 'pending_actions',        href: '/admin/approvals', color: 'bg-primary-container dark:bg-[#153060]',  text: 'text-white', iconBg: 'bg-white/15' },
+    { label: 'Contributions (KES)', value: Math.round(data.totalContributions).toLocaleString(), icon: 'account_balance_wallet', href: null,               color: 'bg-secondary dark:bg-[#7a3a00]',          text: 'text-white', iconBg: 'bg-white/15' },
   ]
 
   const quickLinks = [

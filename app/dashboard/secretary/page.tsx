@@ -13,10 +13,10 @@ export default async function SecretaryPage() {
   const recentMeetings = data.meetings.slice(0, 3)
 
   const stats = [
-    { label: 'Documents',      value: data.documents.length,     icon: 'description', color: 'bg-primary dark:bg-[#0c1e42]',                                               text: 'text-on-primary',                     iconBg: 'bg-white/15' },
-    { label: 'Meetings',       value: data.meetings.length,      icon: 'groups',      color: 'bg-secondary dark:bg-[#c45e00]',                                             text: 'text-white',                          iconBg: 'bg-white/15' },
-    { label: 'Avg attendance', value: data.attendanceAvg,        icon: 'how_to_reg',  color: 'bg-primary/10 dark:bg-primary/20 border border-primary/20 dark:border-primary/30', text: 'text-primary dark:text-blue-200', iconBg: 'bg-primary/15 dark:bg-primary/25' },
-    { label: 'Announcements',  value: data.announcements.length, icon: 'campaign',    color: 'bg-secondary/10 dark:bg-[#c45e00]/15 border border-secondary/25',             text: 'text-secondary dark:text-orange-300', iconBg: 'bg-secondary/15' },
+    { label: 'Documents',      value: data.documents.length,     icon: 'description', color: 'bg-primary dark:bg-[#0c1e42]',           text: 'text-white', iconBg: 'bg-white/15' },
+    { label: 'Meetings',       value: data.meetings.length,      icon: 'groups',      color: 'bg-secondary-container dark:bg-[#c45e00]', text: 'text-white', iconBg: 'bg-white/15' },
+    { label: 'Avg attendance', value: data.attendanceAvg,        icon: 'how_to_reg',  color: 'bg-primary-container dark:bg-[#153060]',  text: 'text-white', iconBg: 'bg-white/15' },
+    { label: 'Announcements',  value: data.announcements.length, icon: 'campaign',    color: 'bg-secondary dark:bg-[#7a3a00]',          text: 'text-white', iconBg: 'bg-white/15' },
   ]
 
   const quickLinks = [
