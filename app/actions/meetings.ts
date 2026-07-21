@@ -1,9 +1,9 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, revalidateTag } from 'next/cache'
 import { z } from 'zod'
 import { requireActiveRole } from '@/lib/auth/session'
-import { createMeeting, updateMeeting } from '@/lib/data/queries'
+import { TAGS, createMeeting, updateMeeting } from '@/lib/data/queries'
 import { prisma } from '@/lib/prisma'
 import { buildMeetingMinutesPdf, minutesFilename } from '@/lib/pdf/minutes'
 import { createServerClient } from '@/lib/supabase-server'
@@ -13,6 +13,7 @@ function revalidateMeetings() {
   revalidatePath('/dashboard/secretary')
   revalidatePath('/dashboard/secretary/meetings')
   revalidatePath('/dashboard/member')
+  revalidateTag(TAGS.meetings)
 }
 
 const meetingFields = z.object({

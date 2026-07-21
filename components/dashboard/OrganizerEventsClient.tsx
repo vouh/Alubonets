@@ -19,9 +19,14 @@ export default function OrganizerEventsClient({ upcoming, past }: Props) {
   const [localUpcoming, setLocalUpcoming] = useState(upcoming)
   const [localPast, setLocalPast] = useState(past)
 
-  // Sync when server refreshes props (e.g. after creating a new event)
+  // Sync when server refreshes props (after background save completes)
   useEffect(() => { setLocalUpcoming(upcoming) }, [upcoming])
   useEffect(() => { setLocalPast(past) }, [past])
+
+  function handleOptimisticAdd(event: EventRow) {
+    setLocalUpcoming((prev) => [event, ...prev])
+    setOpen(false)
+  }
 
   function toggleSelect(id: string) {
     setSelected((prev) => {
@@ -339,7 +344,7 @@ export default function OrganizerEventsClient({ upcoming, past }: Props) {
                 <span className="material-symbols-outlined" style={{ fontSize: 20 }}>close</span>
               </button>
             </div>
-            <CreateEventForm onSuccess={() => setOpen(false)} />
+            <CreateEventForm onOptimisticAdd={handleOptimisticAdd} />
           </div>
         </div>
       , document.body)}

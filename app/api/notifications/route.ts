@@ -4,16 +4,20 @@ import { getRecentItems, getOldAnnouncementsCount } from '@/lib/data/queries'
 
 export const dynamic = 'force-dynamic'
 
-const CLEANUP_ROLES = ['ADMIN', 'SECRETARY', 'EXECUTIVE', 'ORGANIZER']
+const MANAGER_ROLES = ['ADMIN', 'SECRETARY', 'EXECUTIVE', 'ORGANIZER']
 
 export async function GET() {
   const profile = await getSessionProfile()
   if (!profile) return NextResponse.json({ items: [] }, { status: 401 })
 
-  const canCleanup = CLEANUP_ROLES.includes(profile.role)
+  const isManager = MANAGER_ROLES.includes(profile.role)
+  // Managers see 48 h of activity; regular members only see the last 6 h
+  // (toasts feel urgent — once a member has seen them they stay gone via SEEN_TTL)
+  const windowHours = isManager ? 48 : 6
+
   const [{ events, projects, photos }, cleanupCount] = await Promise.all([
-    getRecentItems(),
-    canCleanup ? getOldAnnouncementsCount() : Promise.resolve(0),
+    getRecentItems(windowHours),
+    isManager ? getOldAnnouncementsCount() : Promise.resolve(0),
   ])
 
   const items = [

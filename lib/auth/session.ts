@@ -18,6 +18,8 @@ export type AppMetadataPayload = {
   status: MemberStatus
   isSuperAdmin: boolean
   dashboardAccess: Role[]
+  dbUserId: string   // stored so requests can skip the DB lookup
+  fullName: string
 }
 
 export async function syncAppMetadata(
@@ -35,12 +37,12 @@ export async function syncAppMetadata(
           status: status!,
           isSuperAdmin: isSuperAdmin ?? false,
           dashboardAccess: dashboardAccess ?? [],
+          dbUserId: '',
+          fullName: '',
         }
       : payload
 
-  await admin.auth.admin.updateUserById(authUserId, {
-    app_metadata: meta,
-  })
+  await admin.auth.admin.updateUserById(authUserId, { app_metadata: meta })
 }
 
 export async function syncUserMetadata(user: User) {
@@ -50,18 +52,43 @@ export async function syncUserMetadata(user: User) {
     status: user.status,
     isSuperAdmin: user.isSuperAdmin,
     dashboardAccess: user.dashboardAccess as Role[],
+    dbUserId: user.id,
+    fullName: user.fullName,
   })
+}
+
+function makeInitials(fullName: string) {
+  return fullName.split(' ').filter(Boolean).slice(0, 2).map((n) => n[0]).join('').toUpperCase()
 }
 
 export async function getSessionProfile(): Promise<SessionProfile | null> {
   const cookieStore = await cookies()
   const supabase = createClient(cookieStore)
-  const {
-    data: { user: authUser },
-  } = await supabase.auth.getUser()
 
-  if (!authUser) return null
+  // getSession() decodes the JWT from the cookie — zero network calls
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session) return null
 
+  const authUser = session.user
+  const meta = authUser.app_metadata ?? {}
+
+  // Fast path: JWT already carries everything we need — skip the DB entirely
+  if (isAppRole(meta.role) && meta.status && meta.dbUserId) {
+    const fullName = (meta.fullName as string) || authUser.email?.split('@')[0] || ''
+    return {
+      id: meta.dbUserId as string,
+      email: authUser.email ?? '',
+      fullName,
+      initials: makeInitials(fullName),
+      role: meta.role as Role,
+      status: meta.status as MemberStatus,
+      authUserId: authUser.id,
+      isSuperAdmin: Boolean(meta.isSuperAdmin),
+      dashboardAccess: (meta.dashboardAccess ?? []) as Role[],
+    }
+  }
+
+  // Slow path: first login or metadata not yet seeded — look up DB once
   let profile = await prisma.user.findFirst({
     where: {
       OR: [{ authUserId: authUser.id }, { email: authUser.email ?? undefined }],
@@ -83,7 +110,6 @@ export async function getSessionProfile(): Promise<SessionProfile | null> {
         dashboardAccess: [],
       },
     })
-    await syncUserMetadata(profile)
   }
 
   if (!profile) return null
@@ -95,17 +121,8 @@ export async function getSessionProfile(): Promise<SessionProfile | null> {
     })
   }
 
-  const meta = authUser.app_metadata ?? {}
-  const needsSync =
-    !isAppRole(meta.role) ||
-    meta.role !== profile.role ||
-    meta.status !== profile.status ||
-    Boolean(meta.isSuperAdmin) !== profile.isSuperAdmin ||
-    JSON.stringify(meta.dashboardAccess ?? []) !== JSON.stringify(profile.dashboardAccess)
-
-  if (profile.authUserId && needsSync) {
-    await syncUserMetadata(profile)
-  }
+  // Sync in background — next request hits the fast path, this one doesn't wait
+  syncUserMetadata(profile).catch(() => {})
 
   return {
     ...toAuthUser(profile),
@@ -124,22 +141,17 @@ export async function requireSessionProfile() {
 
 export async function requireActiveRole(roles?: Role[]) {
   const profile = await requireSessionProfile()
-  if (profile.status !== 'ACTIVE') {
-    throw new Error('Account is not active')
-  }
+  if (profile.status !== 'ACTIVE') throw new Error('Account is not active')
   if (!roles) return profile
   if (profile.isSuperAdmin || profile.role === 'ADMIN') return profile
   if (roles.includes(profile.role)) return profile
-  // Extra dashboard grants: allow actions for roles the user may oversee
   if ((profile.dashboardAccess ?? []).some((r) => roles.includes(r))) return profile
   throw new Error('Forbidden')
 }
 
 export async function requireAdmin() {
   const profile = await requireActiveRole(['ADMIN'])
-  if (profile.role !== 'ADMIN' && !profile.isSuperAdmin) {
-    throw new Error('Forbidden')
-  }
+  if (profile.role !== 'ADMIN' && !profile.isSuperAdmin) throw new Error('Forbidden')
   return profile
 }
 
@@ -148,9 +160,8 @@ export async function getPrismaUserByAuthId(authUserId: string): Promise<User | 
 }
 
 export async function clearSessionCookie() {}
-export async function setSessionCookie(_user: AuthUser) {
-  return ''
-}
+export async function setSessionCookie(_user: AuthUser) { return '' }
+
 export async function getSessionUser(): Promise<AuthUser | null> {
   const profile = await getSessionProfile()
   if (!profile || profile.status !== 'ACTIVE') return null

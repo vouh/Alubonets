@@ -10,6 +10,119 @@ function getResend() {
 }
 
 const from = () => process.env.FROM_EMAIL || 'noreply@alubonets.com'
+const appUrl = () => process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'
+
+function baseHtml(body: string) {
+  return `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f5f7fa;font-family:sans-serif;">
+<div style="max-width:600px;margin:32px auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.07);">
+  <div style="background:#003d82;padding:24px 32px;">
+    <span style="color:#fff;font-size:18px;font-weight:700;letter-spacing:-.5px;">Alubonets SHG</span>
+  </div>
+  <div style="padding:28px 32px;">${body}</div>
+  <div style="padding:16px 32px;background:#f5f7fa;border-top:1px solid #e5e7eb;">
+    <p style="margin:0;color:#9ca3af;font-size:12px;">Alubonets Self-Help Group · <a href="${appUrl()}" style="color:#9ca3af;">${appUrl()}</a></p>
+  </div>
+</div></body></html>`
+}
+
+// Sends an email to every active member in batches of 100
+export async function sendBroadcastEmail({
+  subject,
+  title,
+  body,
+  ctaLabel,
+  ctaUrl,
+  template,
+  actorId,
+}: {
+  subject: string
+  title: string
+  body: string
+  ctaLabel?: string
+  ctaUrl?: string
+  template: string
+  actorId?: string
+}) {
+  const resend = getResend()
+  const members = await prisma.user.findMany({
+    where: { status: 'ACTIVE' },
+    select: { id: true, email: true, fullName: true },
+  })
+
+  const ctaBlock = ctaLabel && ctaUrl
+    ? `<p style="margin-top:24px;"><a href="${ctaUrl}" style="display:inline-block;background:#003d82;color:#fff;padding:11px 22px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px;">${ctaLabel}</a></p>`
+    : ''
+
+  const html = (name: string) =>
+    baseHtml(`<h2 style="margin:0 0 16px;font-size:20px;color:#111827;">${title}</h2>
+<p style="margin:0 0 8px;color:#374151;">Hello ${name},</p>
+<div style="color:#374151;line-height:1.7;">${body}</div>
+${ctaBlock}`)
+
+  if (!resend) {
+    await prisma.emailLog.create({
+      data: {
+        userId: actorId ?? '',
+        toEmail: 'BROADCAST',
+        subject,
+        template,
+        status: 'skipped',
+        meta: { reason: 'RESEND_API_KEY not configured', recipients: members.length },
+      },
+    })
+    return { sent: 0, skipped: members.length }
+  }
+
+  // Send in chunks of 100 (Resend batch limit)
+  let sent = 0
+  for (let i = 0; i < members.length; i += 100) {
+    const chunk = members.slice(i, i + 100)
+    await resend.batch.send(
+      chunk.map((m) => ({
+        from: from(),
+        to: m.email,
+        subject,
+        html: html(m.fullName),
+      })),
+    )
+    sent += chunk.length
+  }
+
+  await prisma.emailLog.create({
+    data: {
+      userId: actorId ?? '',
+      toEmail: 'BROADCAST',
+      subject,
+      template,
+      status: 'sent',
+      meta: { sent },
+    },
+  })
+  return { sent }
+}
+
+// Specific helper for gallery photo notifications
+export async function sendGalleryNotificationEmail({
+  caption,
+  category,
+  actorId,
+}: {
+  caption?: string
+  category?: string
+  actorId: string
+}) {
+  const captionLine = caption ? `<p style="color:#6b7280;font-style:italic;">"${caption}"</p>` : ''
+  const catLine = category ? `<p style="color:#6b7280;">Category: <strong>${category}</strong></p>` : ''
+  return sendBroadcastEmail({
+    subject: 'New photos added to our gallery — Alubonets SHG',
+    title: 'New gallery photos',
+    body: `New photos have been added to the Alubonets SHG gallery.${captionLine}${catLine}`,
+    ctaLabel: 'View Gallery',
+    ctaUrl: `${appUrl()}/gallery`,
+    template: 'gallery_notification',
+    actorId,
+  })
+}
 
 export async function sendMemberApprovedEmail(user: User) {
   const resend = getResend()

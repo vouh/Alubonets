@@ -1,38 +1,22 @@
-import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
-import { createClient } from '@/utils/supabase/server'
+import Link from 'next/link'
 import DashboardShell from '@/components/dashboard/DashboardShell'
 import { ORGANIZER_NAV } from '@/lib/dashboard/nav'
 import { getSessionProfile } from '@/lib/auth/session'
-import Link from 'next/link'
+import { getOrganizerDashboardData } from '@/lib/data/queries'
 
 export default async function OrganizerPage() {
   const profile = await getSessionProfile()
   if (!profile) redirect('/login')
 
-  const cookieStore = await cookies()
-  const supabase = createClient(cookieStore)
-  const now = new Date().toISOString()
-
-  const [
-    { data: allEvents },
-    { data: gallery },
-    { data: projects },
-  ] = await Promise.all([
-    supabase.from('events').select('id, title, startsAt, location, description').order('startsAt', { ascending: true }),
-    supabase.from('gallery_photos').select('id').order('uploadedAt', { ascending: false }),
-    supabase.from('projects').select('id').order('updatedAt', { ascending: false }),
-  ])
-
-  const events = allEvents ?? []
-  const upcoming = events.filter((e) => e.startsAt >= now)
+  const { events, upcoming, galleryCount, projectCount } = await getOrganizerDashboardData()
   const nextEvent = upcoming[0] ?? null
 
   const stats = [
-    { label: 'Total events',   value: events.length,          icon: 'event',          color: 'bg-primary dark:bg-[#0c1e42]',           text: 'text-white', iconBg: 'bg-white/15' },
-    { label: 'Upcoming',       value: upcoming.length,         icon: 'event_upcoming', color: 'bg-secondary-container dark:bg-[#c45e00]', text: 'text-white', iconBg: 'bg-white/15' },
-    { label: 'Gallery photos', value: (gallery ?? []).length,  icon: 'photo_library',  color: 'bg-primary-container dark:bg-[#153060]',  text: 'text-white', iconBg: 'bg-white/15' },
-    { label: 'Projects',       value: (projects ?? []).length, icon: 'work',           color: 'bg-secondary dark:bg-[#7a3a00]',          text: 'text-white', iconBg: 'bg-white/15' },
+    { label: 'Total events',   value: events.length,   icon: 'event',          color: 'bg-primary dark:bg-[#0c1e42]',           text: 'text-white', iconBg: 'bg-white/15' },
+    { label: 'Upcoming',       value: upcoming.length,  icon: 'event_upcoming', color: 'bg-secondary-container dark:bg-[#c45e00]', text: 'text-white', iconBg: 'bg-white/15' },
+    { label: 'Gallery photos', value: galleryCount,     icon: 'photo_library',  color: 'bg-primary-container dark:bg-[#153060]',  text: 'text-white', iconBg: 'bg-white/15' },
+    { label: 'Projects',       value: projectCount,     icon: 'work',           color: 'bg-secondary dark:bg-[#7a3a00]',          text: 'text-white', iconBg: 'bg-white/15' },
   ]
 
   const quickLinks = [

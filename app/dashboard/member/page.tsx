@@ -1,50 +1,17 @@
-import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import DashboardShell from '@/components/dashboard/DashboardShell'
 import { MEMBER_NAV } from '@/lib/dashboard/nav'
 import { getSessionProfile } from '@/lib/auth/session'
-import { createClient } from '@/utils/supabase/server'
+import { getMemberDashboardData } from '@/lib/data/queries'
 import MemberContributeModal from '@/components/dashboard/MemberContributeModal'
 
 export default async function MemberPage() {
   const profile = await getSessionProfile()
   if (!profile) redirect('/login')
 
-  const cookieStore = await cookies()
-  const supabase = createClient(cookieStore)
-  const now = new Date().toISOString()
-
-  const [
-    { data: contributions },
-    { data: announcements },
-    { data: events },
-    { data: documents },
-    { data: welfare },
-  ] = await Promise.all([
-    supabase.from('contributions').select('amount').eq('userId', profile.id),
-    supabase
-      .from('announcements')
-      .select('id, title, content, publishedAt')
-      .eq('broadcast', true)
-      .order('publishedAt', { ascending: false })
-      .limit(5),
-    supabase
-      .from('events')
-      .select('id, title, startsAt')
-      .gte('startsAt', now)
-      .order('startsAt', { ascending: true })
-      .limit(5),
-    supabase
-      .from('documents')
-      .select('id, title, fileUrl')
-      .order('uploadedAt', { ascending: false })
-      .limit(5),
-    supabase.from('welfare_requests').select('id').eq('userId', profile.id),
-  ])
-
-  const total = (contributions ?? []).reduce((s, c) => s + (c.amount ?? 0), 0)
-  const welfareCount = welfare?.length ?? 0
+  const { total, welfareCount, announcements, events, documents } =
+    await getMemberDashboardData(profile.id)
 
   return (
     <DashboardShell role="MEMBER" title="Member" nav={MEMBER_NAV}>
@@ -107,19 +74,13 @@ export default async function MemberPage() {
             className="group flex items-center gap-4 rounded-2xl border border-outline-variant dark:border-[#1a2d4f] bg-surface dark:bg-[#0d1729] p-4 hover:border-primary/40 hover:shadow-md transition-all"
           >
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 dark:bg-primary/20 group-hover:bg-primary/20 transition-colors">
-              <span className="material-symbols-outlined icon-fill text-primary" style={{ fontSize: 22 }}>
-                payments
-              </span>
+              <span className="material-symbols-outlined icon-fill text-primary" style={{ fontSize: 22 }}>payments</span>
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-on-surface dark:text-blue-50 text-[14px]">Contributions</p>
-              <p className="text-[12px] text-on-surface-variant dark:text-blue-200/60 mt-0.5 truncate">
-                History and statement PDF
-              </p>
+              <p className="text-[12px] text-on-surface-variant dark:text-blue-200/60 mt-0.5 truncate">History and statement PDF</p>
             </div>
-            <span className="material-symbols-outlined text-outline dark:text-blue-200/30 group-hover:text-primary group-hover:translate-x-0.5 transition-all" style={{ fontSize: 18 }}>
-              chevron_right
-            </span>
+            <span className="material-symbols-outlined text-outline dark:text-blue-200/30 group-hover:text-primary group-hover:translate-x-0.5 transition-all" style={{ fontSize: 18 }}>chevron_right</span>
           </Link>
 
           <Link
@@ -127,19 +88,13 @@ export default async function MemberPage() {
             className="group flex items-center gap-4 rounded-2xl border border-outline-variant dark:border-[#1a2d4f] bg-surface dark:bg-[#0d1729] p-4 hover:border-secondary/50 hover:shadow-md transition-all"
           >
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-secondary-container/60 dark:bg-secondary/20 group-hover:bg-secondary-container transition-colors">
-              <span className="material-symbols-outlined icon-fill text-secondary dark:text-orange-300" style={{ fontSize: 22 }}>
-                volunteer_activism
-              </span>
+              <span className="material-symbols-outlined icon-fill text-secondary dark:text-orange-300" style={{ fontSize: 22 }}>volunteer_activism</span>
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-on-surface dark:text-blue-50 text-[14px]">Welfare</p>
-              <p className="text-[12px] text-on-surface-variant dark:text-blue-200/60 mt-0.5 truncate">
-                Request support and track status
-              </p>
+              <p className="text-[12px] text-on-surface-variant dark:text-blue-200/60 mt-0.5 truncate">Request support and track status</p>
             </div>
-            <span className="material-symbols-outlined text-outline dark:text-blue-200/30 group-hover:text-secondary group-hover:translate-x-0.5 transition-all" style={{ fontSize: 18 }}>
-              chevron_right
-            </span>
+            <span className="material-symbols-outlined text-outline dark:text-blue-200/30 group-hover:text-secondary group-hover:translate-x-0.5 transition-all" style={{ fontSize: 18 }}>chevron_right</span>
           </Link>
         </div>
 
@@ -148,15 +103,13 @@ export default async function MemberPage() {
           <section className="rounded-2xl border border-outline-variant dark:border-[#1a2d4f] bg-surface dark:bg-[#0d1729] p-4">
             <div className="flex items-center gap-2 mb-3">
               <span className="material-symbols-outlined icon-fill text-primary" style={{ fontSize: 18 }}>campaign</span>
-              <h2 className="font-semibold text-[13px] text-on-surface dark:text-blue-50 uppercase tracking-wider">
-                Announcements
-              </h2>
+              <h2 className="font-semibold text-[13px] text-on-surface dark:text-blue-50 uppercase tracking-wider">Announcements</h2>
             </div>
-            {(announcements ?? []).length === 0 ? (
+            {announcements.length === 0 ? (
               <p className="text-[13px] text-on-surface-variant dark:text-blue-200/50">No announcements yet.</p>
             ) : (
               <ul className="space-y-3">
-                {(announcements ?? []).map((a) => (
+                {announcements.map((a) => (
                   <li key={a.id} className="flex gap-3">
                     <div className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary/60 dark:bg-blue-400/60" />
                     <div className="min-w-0">
@@ -177,15 +130,13 @@ export default async function MemberPage() {
           <section className="rounded-2xl border border-outline-variant dark:border-[#1a2d4f] bg-surface dark:bg-[#0d1729] p-4">
             <div className="flex items-center gap-2 mb-3">
               <span className="material-symbols-outlined icon-fill text-primary" style={{ fontSize: 18 }}>event</span>
-              <h2 className="font-semibold text-[13px] text-on-surface dark:text-blue-50 uppercase tracking-wider">
-                Upcoming events
-              </h2>
+              <h2 className="font-semibold text-[13px] text-on-surface dark:text-blue-50 uppercase tracking-wider">Upcoming events</h2>
             </div>
-            {(events ?? []).length === 0 ? (
+            {events.length === 0 ? (
               <p className="text-[13px] text-on-surface-variant dark:text-blue-200/50">No upcoming events.</p>
             ) : (
               <ul className="space-y-2.5">
-                {(events ?? []).map((e) => {
+                {events.map((e) => {
                   const d = new Date(e.startsAt)
                   return (
                     <li key={e.id} className="flex items-start gap-3">
@@ -212,14 +163,14 @@ export default async function MemberPage() {
         </div>
 
         {/* Documents */}
-        {(documents ?? []).length > 0 && (
+        {documents.length > 0 && (
           <section className="rounded-2xl border border-outline-variant dark:border-[#1a2d4f] bg-surface dark:bg-[#0d1729] p-4">
             <div className="flex items-center gap-2 mb-3">
               <span className="material-symbols-outlined icon-fill text-primary" style={{ fontSize: 18 }}>folder_open</span>
               <h2 className="font-semibold text-[13px] text-on-surface dark:text-blue-50 uppercase tracking-wider">Documents</h2>
             </div>
             <ul className="space-y-1.5">
-              {(documents ?? []).map((d) => (
+              {documents.map((d) => (
                 <li key={d.id}>
                   <a
                     href={d.fileUrl}
@@ -227,13 +178,9 @@ export default async function MemberPage() {
                     rel="noreferrer"
                     className="group flex items-center gap-2.5 rounded-lg px-3 py-2 hover:bg-surface-container dark:hover:bg-[#111f36] transition-colors"
                   >
-                    <span className="material-symbols-outlined text-outline dark:text-blue-200/40 group-hover:text-primary transition-colors" style={{ fontSize: 16 }}>
-                      description
-                    </span>
+                    <span className="material-symbols-outlined text-outline dark:text-blue-200/40 group-hover:text-primary transition-colors" style={{ fontSize: 16 }}>description</span>
                     <span className="text-[13px] text-primary dark:text-blue-300 group-hover:underline truncate">{d.title}</span>
-                    <span className="material-symbols-outlined text-outline dark:text-blue-200/30 ml-auto shrink-0" style={{ fontSize: 14 }}>
-                      open_in_new
-                    </span>
+                    <span className="material-symbols-outlined text-outline dark:text-blue-200/30 ml-auto shrink-0" style={{ fontSize: 14 }}>open_in_new</span>
                   </a>
                 </li>
               ))}

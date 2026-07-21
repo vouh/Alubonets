@@ -1,9 +1,11 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, revalidateTag } from 'next/cache'
+import { after } from 'next/server'
 import { z } from 'zod'
 import { requireActiveRole, requireAdmin, requireSessionProfile } from '@/lib/auth/session'
 import {
+  TAGS,
   approveGalleryPhoto,
   createContribution,
   createDocument,
@@ -13,13 +15,15 @@ import {
   deleteAnnouncement,
   deleteEvent,
   deleteEvents,
+  deleteGalleryPhoto,
+  deleteGalleryPhotos,
   markAnnouncementsRead,
   sendAnnouncement,
   updateWelfareStatus,
   upsertProject,
 } from '@/lib/data/queries'
 import { prisma } from '@/lib/prisma'
-import { sendContributionReceiptEmail, sendWelfareStatusEmail } from '@/lib/email/resend'
+import { sendBroadcastEmail, sendContributionReceiptEmail, sendGalleryNotificationEmail, sendWelfareStatusEmail } from '@/lib/email/resend'
 import { writeAudit } from '@/lib/audit'
 
 export async function actionCreateContribution(formData: FormData) {
@@ -62,6 +66,7 @@ export async function actionCreateContribution(formData: FormData) {
   revalidatePath('/dashboard/treasurer')
   revalidatePath('/dashboard/member')
   revalidatePath('/admin')
+  revalidateTag(TAGS.contributions)
 }
 
 export async function actionEmailReceipt(formData: FormData) {
@@ -97,6 +102,7 @@ export async function actionCreateWelfare(formData: FormData) {
   revalidatePath('/dashboard/member')
   revalidatePath('/dashboard/treasurer')
   revalidatePath('/admin')
+  revalidateTag(TAGS.welfare)
 }
 
 export async function actionReviewWelfare(formData: FormData) {
@@ -119,14 +125,16 @@ export async function actionReviewWelfare(formData: FormData) {
   revalidatePath('/dashboard/treasurer')
   revalidatePath('/dashboard/member')
   revalidatePath('/admin')
+  revalidateTag(TAGS.welfare)
 }
 
 export async function actionSendAnnouncement(formData: FormData) {
-  const actor = await requireAdmin()
+  const actor = await requireActiveRole(['ADMIN', 'ORGANIZER', 'SECRETARY', 'EXECUTIVE'])
   const title = String(formData.get('title') || '').trim()
   const content = String(formData.get('content') || '').trim()
   const audience = String(formData.get('audience') || 'ALL')
   const memberIds = formData.getAll('memberIds').map(String).filter(Boolean)
+  const sendEmail = formData.get('sendEmail') !== 'off'
   if (!title || !content) throw new Error('Title and content required')
   const broadcast = audience !== 'SELECTED'
   if (!broadcast && memberIds.length === 0) {
@@ -146,8 +154,26 @@ export async function actionSendAnnouncement(formData: FormData) {
     entityId: announcement.id,
     meta: { broadcast, recipients: broadcast ? 'all' : memberIds.length },
   })
+  // Send email to all members in the background (doesn't block response)
+  if (broadcast && sendEmail) {
+    const actorId = actor.id
+    const paragraphs = content.split('\n').filter(Boolean)
+      .map((p) => `<p style="margin:0 0 8px;">${p}</p>`).join('')
+    after(() =>
+      sendBroadcastEmail({
+        subject: title,
+        title,
+        body: paragraphs,
+        ctaLabel: 'View Announcements',
+        ctaUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'}/announcements`,
+        template: 'announcement_broadcast',
+        actorId,
+      }).catch(console.error)
+    )
+  }
   revalidatePath('/announcements')
   revalidatePath('/dashboard/member')
+  revalidateTag(TAGS.announcements)
 }
 
 export async function actionMarkAnnouncementsRead() {
@@ -158,8 +184,13 @@ export async function actionMarkAnnouncementsRead() {
 export async function actionDeleteAnnouncement(id: string) {
   await requireActiveRole(['ADMIN', 'SECRETARY', 'EXECUTIVE', 'ORGANIZER'])
   await deleteAnnouncement(id)
+  // Revalidate every path that shows announcements so it disappears for all users
   revalidatePath('/announcements')
   revalidatePath('/dashboard/member')
+  revalidatePath('/dashboard/organizer')
+  revalidatePath('/dashboard/treasurer')
+  revalidatePath('/dashboard/secretary')
+  revalidateTag(TAGS.announcements)
 }
 
 export async function actionCreateEvent(formData: FormData) {
@@ -184,6 +215,7 @@ export async function actionCreateEvent(formData: FormData) {
   })
 
   if (sendNotif) {
+    const authorId = actor.id
     const dateStr = new Date(startsAt).toLocaleString('en-KE', {
       weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
       hour: '2-digit', minute: '2-digit',
@@ -192,18 +224,20 @@ export async function actionCreateEvent(formData: FormData) {
     if (location) lines.push(`📍 ${location}`)
     if (description) lines.push(description)
     if (!isPublic) lines.push('(Members only — not listed on the public website)')
-    await sendAnnouncement({
-      authorId: actor.id,
+    // Run after response is sent — doesn't block the modal from closing
+    after(() => sendAnnouncement({
+      authorId,
       title: `New event: ${title}`,
       content: lines.join('\n'),
       broadcast: true,
-    })
+    }))
   }
 
   revalidatePath('/dashboard/organizer')
   revalidatePath('/dashboard/organizer/events')
   revalidatePath('/dashboard/member')
   revalidatePath('/events')
+  revalidateTag(TAGS.events)
 }
 
 const EVENT_PATHS = [
@@ -216,14 +250,16 @@ const EVENT_PATHS = [
 export async function actionDeleteEvent(id: string) {
   await requireActiveRole(['ORGANIZER', 'ADMIN', 'SECRETARY'])
   await deleteEvent(id)
-  EVENT_PATHS.forEach(revalidatePath)
+  EVENT_PATHS.forEach((p) => revalidatePath(p))
+  revalidateTag(TAGS.events)
 }
 
 export async function actionDeleteEvents(ids: string[]) {
   await requireActiveRole(['ORGANIZER', 'ADMIN', 'SECRETARY'])
   if (!ids.length) return
   await deleteEvents(ids)
-  EVENT_PATHS.forEach(revalidatePath)
+  EVENT_PATHS.forEach((p) => revalidatePath(p))
+  revalidateTag(TAGS.events)
 }
 
 export async function actionCreateDocument(formData: FormData) {
@@ -239,23 +275,51 @@ export async function actionCreateDocument(formData: FormData) {
   })
   revalidatePath('/dashboard/secretary')
   revalidatePath('/dashboard/member')
+  revalidateTag(TAGS.documents)
 }
 
 export async function actionCreateGallery(formData: FormData) {
   const actor = await requireActiveRole(['ORGANIZER', 'ADMIN', 'MEMBER'])
   const url = String(formData.get('url') || '')
   if (!url) throw new Error('Image URL required')
-  const autoPublic = actor.role === 'ADMIN' || actor.role === 'ORGANIZER'
+  const caption = String(formData.get('caption') || '') || undefined
+  const category = String(formData.get('category') || '') || undefined
   await createGalleryPhoto({
     url,
-    caption: String(formData.get('caption') || '') || undefined,
-    category: String(formData.get('category') || '') || undefined,
+    caption,
+    category,
     uploadedBy: actor.id,
-    isPublic: autoPublic && formData.get('publish') === 'on',
+    isPublic: true, // always public — organizer/admin additions go live immediately
   })
+  // Notify members by email in the background (no in-app announcement → no cleanup queue)
+  const actorId = actor.id
+  after(() =>
+    sendGalleryNotificationEmail({ caption, category, actorId }).catch(console.error)
+  )
   revalidatePath('/dashboard/organizer')
+  revalidatePath('/dashboard/organizer/gallery')
   revalidatePath('/admin')
   revalidatePath('/gallery')
+  revalidateTag(TAGS.gallery)
+}
+
+export async function actionDeleteGalleryPhoto(id: string) {
+  await requireActiveRole(['ORGANIZER', 'ADMIN'])
+  await deleteGalleryPhoto(id)
+  revalidatePath('/dashboard/organizer/gallery')
+  revalidatePath('/gallery')
+  revalidatePath('/admin')
+  revalidateTag(TAGS.gallery)
+}
+
+export async function actionDeleteGalleryPhotos(ids: string[]) {
+  await requireActiveRole(['ORGANIZER', 'ADMIN'])
+  if (!ids.length) return
+  await deleteGalleryPhotos(ids)
+  revalidatePath('/dashboard/organizer/gallery')
+  revalidatePath('/gallery')
+  revalidatePath('/admin')
+  revalidateTag(TAGS.gallery)
 }
 
 export async function actionApproveGallery(formData: FormData) {
@@ -266,6 +330,7 @@ export async function actionApproveGallery(formData: FormData) {
   revalidatePath('/admin')
   revalidatePath('/dashboard/organizer')
   revalidatePath('/gallery')
+  revalidateTag(TAGS.gallery)
 }
 
 export async function actionUpsertProject(formData: FormData) {
@@ -287,6 +352,7 @@ export async function actionUpsertProject(formData: FormData) {
   revalidatePath('/dashboard/executive')
   revalidatePath('/dashboard/organizer')
   revalidatePath('/projects')
+  revalidateTag(TAGS.projects)
 }
 
 export async function actionImportContributionsCsv(csvText: string) {
@@ -327,5 +393,6 @@ export async function actionImportContributionsCsv(csvText: string) {
   })
 
   revalidatePath('/dashboard/treasurer')
+  revalidateTag(TAGS.contributions)
   return { created }
 }

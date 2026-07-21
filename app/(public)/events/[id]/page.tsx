@@ -70,12 +70,6 @@ export default async function EventDetailPage({ params }: Props) {
                 Past event
               </span>
             )}
-            {!isPast && countdownLabel && daysUntil <= 7 && (
-              <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest bg-primary/80 backdrop-blur-sm text-white px-3 py-1 rounded-full mb-3">
-                <span className="material-symbols-outlined icon-fill" style={{ fontSize: 11 }}>alarm</span>
-                {countdownLabel}
-              </span>
-            )}
             <h1 className="text-[28px] md:text-[42px] font-black text-white leading-tight max-w-3xl">{event.title}</h1>
           </div>
         </div>
@@ -91,14 +85,6 @@ export default async function EventDetailPage({ params }: Props) {
               <div className="mb-3">
                 <span className="inline-flex items-center text-[10px] font-bold uppercase tracking-widest bg-outline/10 text-outline px-3 py-1 rounded-full">
                   Past event
-                </span>
-              </div>
-            )}
-            {!isPast && countdownLabel && daysUntil <= 7 && (
-              <div className="mb-3">
-                <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest bg-primary/10 text-primary px-3 py-1 rounded-full">
-                  <span className="material-symbols-outlined icon-fill" style={{ fontSize: 11 }}>alarm</span>
-                  {countdownLabel}
                 </span>
               </div>
             )}
@@ -179,7 +165,7 @@ export default async function EventDetailPage({ params }: Props) {
       <div className="max-w-container-max mx-auto px-md md:px-lg py-xl max-w-3xl">
         {paragraphs.length > 0 ? (
           <div className="space-y-5">
-            {paragraphs.map((p, i) => (
+            {paragraphs.map((p: string, i: number) => (
               <p key={i} className="text-[16px] text-on-surface-variant leading-[1.85]">{p}</p>
             ))}
           </div>

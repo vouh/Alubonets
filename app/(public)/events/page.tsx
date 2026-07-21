@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { createClient } from '@/utils/supabase/server'
-import { cookies } from 'next/headers'
+import { getPublicEvents } from '@/lib/data/queries'
 
 export const metadata: Metadata = {
   title: 'Events — Alubonets SHG',
@@ -29,7 +28,6 @@ function EventCard({ event, past = false }: { event: EventRow; past?: boolean })
     <Link href={`/events/${event.id}`} className="block group">
       <article className={`rounded-2xl border border-outline-variant bg-surface overflow-hidden flex flex-col shadow-sm transition-all duration-300 hover:shadow-xl hover:-translate-y-1 h-full ${past ? 'opacity-60' : ''}`}>
 
-        {/* Header */}
         {event.imageUrl ? (
           <div className="relative overflow-hidden">
             <img
@@ -66,7 +64,6 @@ function EventCard({ event, past = false }: { event: EventRow; past?: boolean })
           </div>
         )}
 
-        {/* Body */}
         <div className="p-4 flex flex-col gap-2 flex-1">
           {event.imageUrl && (
             <h3 className={`font-bold text-[15px] leading-snug line-clamp-2 ${past ? 'text-on-surface-variant' : 'text-on-surface'}`}>
@@ -113,25 +110,12 @@ function EventCard({ event, past = false }: { event: EventRow; past?: boolean })
 }
 
 export default async function PublicEventsPage() {
-  const cookieStore = await cookies()
-  const supabase = createClient(cookieStore)
-  const now = new Date().toISOString()
-
-  const { data } = await supabase
-    .from('events')
-    .select('id, title, startsAt, location, description, imageUrl')
-    .eq('isPublic', true)
-    .order('startsAt', { ascending: true })
-
-  const all = data ?? []
-  const upcoming = all.filter((e) => e.startsAt >= now)
-  const past = all.filter((e) => e.startsAt < now).reverse().slice(0, 6)
+  const { upcoming, past } = await getPublicEvents()
 
   return (
     <main className="flex-grow">
       <div className="max-w-container-max mx-auto px-md md:px-lg py-xl space-y-xxl">
 
-        {/* Upcoming */}
         <section>
           <div className="flex items-center gap-2.5 mb-lg">
             <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-primary/10">
@@ -158,7 +142,6 @@ export default async function PublicEventsPage() {
           )}
         </section>
 
-        {/* Past */}
         {past.length > 0 && (
           <section>
             <div className="flex items-center gap-2.5 mb-lg">
