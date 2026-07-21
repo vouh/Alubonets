@@ -9,6 +9,7 @@ import { ROLE_HOME, ROLE_LABEL } from '@/lib/auth/types'
 import ThemeLoader from '@/components/ui/ThemeLoader'
 import DashboardNav from './DashboardNav'
 import WorkspaceSwitcher from './WorkspaceSwitcher'
+import DashboardNotifications from './DashboardNotifications'
 
 export type NavItem = {
   icon: string
@@ -26,7 +27,7 @@ type Props = {
 }
 
 function LiveDateBadge() {
-  const [now, setNow] = useState(() => new Date())
+  const [now, setNow] = useState<Date | null>(null)
 
   useEffect(() => {
     const tick = () => setNow(new Date())
@@ -34,6 +35,8 @@ function LiveDateBadge() {
     const id = window.setInterval(tick, 60_000)
     return () => window.clearInterval(id)
   }, [])
+
+  if (!now) return <span className="live-date-badge shrink-0" />
 
   const weekday = now.toLocaleDateString(undefined, { weekday: 'short' }).toUpperCase()
   const date = `${now.getDate()}/${now.getMonth() + 1}/${now.getFullYear()}`
@@ -164,7 +167,14 @@ export default function DashboardShell({ role, title, nav, children }: Props) {
           )}
         </div>
 
-        <DashboardNav nav={nav} collapsed={collapsed} />
+        <DashboardNav
+          nav={nav.map((item) =>
+            item.href === '/announcements' && unread > 0
+              ? { ...item, badge: String(unread) }
+              : item
+          )}
+          collapsed={collapsed}
+        />
 
         <div className={`py-md border-t border-white/10 space-y-sm ${collapsed ? 'px-sm' : 'px-md'}`}>
           <Link
@@ -314,6 +324,7 @@ export default function DashboardShell({ role, title, nav, children }: Props) {
           {children}
         </main>
       </div>
+      <DashboardNotifications />
     </div>
   )
 }

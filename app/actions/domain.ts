@@ -10,6 +10,9 @@ import {
   createEvent,
   createGalleryPhoto,
   createWelfareRequest,
+  deleteAnnouncement,
+  deleteEvent,
+  deleteEvents,
   markAnnouncementsRead,
   sendAnnouncement,
   updateWelfareStatus,
@@ -152,6 +155,13 @@ export async function actionMarkAnnouncementsRead() {
   await markAnnouncementsRead(profile.id)
 }
 
+export async function actionDeleteAnnouncement(id: string) {
+  await requireActiveRole(['ADMIN', 'SECRETARY'])
+  await deleteAnnouncement(id)
+  revalidatePath('/announcements')
+  revalidatePath('/dashboard/member')
+}
+
 export async function actionCreateEvent(formData: FormData) {
   const actor = await requireActiveRole(['ORGANIZER', 'ADMIN', 'SECRETARY'])
   const title = String(formData.get('title') || '')
@@ -194,6 +204,26 @@ export async function actionCreateEvent(formData: FormData) {
   revalidatePath('/dashboard/organizer/events')
   revalidatePath('/dashboard/member')
   revalidatePath('/events')
+}
+
+const EVENT_PATHS = [
+  '/dashboard/organizer',
+  '/dashboard/organizer/events',
+  '/dashboard/member',
+  '/events',
+]
+
+export async function actionDeleteEvent(id: string) {
+  await requireActiveRole(['ORGANIZER', 'ADMIN', 'SECRETARY'])
+  await deleteEvent(id)
+  EVENT_PATHS.forEach(revalidatePath)
+}
+
+export async function actionDeleteEvents(ids: string[]) {
+  await requireActiveRole(['ORGANIZER', 'ADMIN', 'SECRETARY'])
+  if (!ids.length) return
+  await deleteEvents(ids)
+  EVENT_PATHS.forEach(revalidatePath)
 }
 
 export async function actionCreateDocument(formData: FormData) {

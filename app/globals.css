@@ -43,6 +43,45 @@
   transform: translate3d(0, 0, 0) scale(1);
 }
 
+/* —— CSS-driven page reveals via html[data-pr] (zero React DOM mutation) —— */
+@keyframes pr-up {
+  from { opacity: 0; transform: translate3d(0, 18px, 0); }
+  to   { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+html[data-pr] main > section:not(.site-motto-band),
+html[data-pr] main > div:not(.site-motto-band) {
+  animation: pr-up 0.85s cubic-bezier(0.33, 1, 0.68, 1) both;
+}
+html[data-pr] main > *:nth-child(2) { animation-delay: 60ms; }
+html[data-pr] main > *:nth-child(3) { animation-delay: 120ms; }
+html[data-pr] main > *:nth-child(4) { animation-delay: 180ms; }
+
+html[data-pr] main h2 {
+  animation: pr-up 0.7s cubic-bezier(0.33, 1, 0.68, 1) both;
+}
+
+html[data-pr] main .grid > *,
+html[data-pr] main article {
+  animation: pr-up 0.8s cubic-bezier(0.33, 1, 0.68, 1) both;
+}
+html[data-pr] main .grid > *:nth-child(2),
+html[data-pr] main article:nth-child(2) { animation-delay: 80ms; }
+html[data-pr] main .grid > *:nth-child(3),
+html[data-pr] main article:nth-child(3) { animation-delay: 160ms; }
+html[data-pr] main .grid > *:nth-child(4),
+html[data-pr] main article:nth-child(4) { animation-delay: 240ms; }
+html[data-pr] main .grid > *:nth-child(n+5),
+html[data-pr] main article:nth-child(n+5) { animation-delay: 320ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-pr] main > section,
+  html[data-pr] main > div,
+  html[data-pr] main h2,
+  html[data-pr] main .grid > *,
+  html[data-pr] main article { animation: none; }
+}
+
 /* —— Mission / Vision / Values hover —— */
 .mvv-card {
   transition:

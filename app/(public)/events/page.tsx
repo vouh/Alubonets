@@ -1,22 +1,11 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { createClient } from '@/utils/supabase/server'
 import { cookies } from 'next/headers'
 
 export const metadata: Metadata = {
   title: 'Events — Alubonets SHG',
   description: 'Upcoming and past events organised by Alubonets Self-Help Group.',
-}
-
-function CalendarChip({ dateStr }: { dateStr: string }) {
-  const d = new Date(dateStr)
-  const month = d.toLocaleDateString(undefined, { month: 'short' }).toUpperCase()
-  const day = d.getDate()
-  return (
-    <div className="flex w-12 shrink-0 flex-col items-center rounded-xl border border-primary/20 bg-primary/5 py-2 text-center">
-      <span className="text-[10px] font-semibold text-secondary uppercase leading-none tracking-wide">{month}</span>
-      <span className="text-[20px] font-bold text-primary leading-tight">{day}</span>
-    </div>
-  )
 }
 
 type EventRow = {
@@ -28,46 +17,98 @@ type EventRow = {
   imageUrl?: string | null
 }
 
-function EventCard({ event }: { event: EventRow }) {
+function EventCard({ event, past = false }: { event: EventRow; past?: boolean }) {
   const date = new Date(event.startsAt)
-  const time = date.toLocaleString(undefined, {
-    weekday: 'short',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
+  const month = date.toLocaleDateString('en-KE', { month: 'short' }).toUpperCase()
+  const day = date.getDate()
+  const weekday = date.toLocaleDateString('en-KE', { weekday: 'long' })
+  const time = date.toLocaleTimeString('en-KE', { hour: '2-digit', minute: '2-digit' })
+  const fullDate = date.toLocaleDateString('en-KE', { day: 'numeric', month: 'long', year: 'numeric' })
 
   return (
-    <article className="rounded-2xl border border-outline-variant bg-surface overflow-hidden flex flex-col shadow-sm hover:shadow-md transition-shadow">
-      {event.imageUrl ? (
-        <div className="overflow-hidden">
-          <img
-            src={event.imageUrl}
-            alt={event.title}
-            className="w-full h-48 object-cover hover:scale-105 transition-transform duration-500"
-          />
-        </div>
-      ) : (
-        <div className="w-full h-28 bg-gradient-to-br from-primary/8 to-primary/3 flex items-center justify-center">
-          <span className="material-symbols-outlined icon-fill text-primary/25" style={{ fontSize: 48 }}>
-            event
-          </span>
-        </div>
-      )}
-      <div className="p-4 flex gap-3 flex-1">
-        <CalendarChip dateStr={event.startsAt} />
-        <div className="min-w-0">
-          <h3 className="font-semibold text-[15px] text-on-surface leading-snug">{event.title}</h3>
-          <p className="text-[13px] text-on-surface-variant mt-0.5">
-            {time}{event.location ? ` · ${event.location}` : ''}
-          </p>
-          {event.description && (
-            <p className="text-[13px] text-on-surface-variant/80 mt-2 line-clamp-3 leading-relaxed">
+    <Link href={`/events/${event.id}`} className="block group">
+      <article className={`rounded-2xl border border-outline-variant bg-surface overflow-hidden flex flex-col shadow-sm transition-all duration-300 hover:shadow-xl hover:-translate-y-1 h-full ${past ? 'opacity-60' : ''}`}>
+
+        {/* Header */}
+        {event.imageUrl ? (
+          <div className="relative overflow-hidden">
+            <img
+              src={event.imageUrl}
+              alt={event.title}
+              className={`w-full h-48 object-cover transition-transform duration-500 group-hover:scale-105 ${past ? 'grayscale' : ''}`}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
+            <div className="absolute bottom-3 left-3">
+              <div className="flex flex-col items-center justify-center w-11 h-11 rounded-xl bg-white/15 backdrop-blur-md border border-white/25 shadow">
+                <span className="text-[9px] font-bold text-white/80 uppercase tracking-widest leading-none">{month}</span>
+                <span className="text-[19px] font-black text-white leading-none">{day}</span>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="relative h-36 bg-gradient-to-br from-primary to-[#001435] overflow-hidden">
+            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[100px] font-black leading-none select-none text-white/[0.055] pointer-events-none">{day}</span>
+            <div className="absolute inset-0 flex items-center px-5 gap-4">
+              <div className="flex flex-col items-center justify-center w-14 h-14 flex-shrink-0 rounded-2xl bg-white/12 backdrop-blur-sm border border-white/15">
+                <span className="text-[9px] font-bold text-on-primary/70 uppercase tracking-[0.18em] leading-none">{month}</span>
+                <span className="text-[28px] font-black text-on-primary leading-none">{day}</span>
+              </div>
+              <div className="min-w-0">
+                <h3 className="text-[16px] font-bold text-on-primary leading-snug line-clamp-2">{event.title}</h3>
+                {!past && (
+                  <p className="text-[12px] text-on-primary/60 mt-1 flex items-center gap-1">
+                    <span className="material-symbols-outlined" style={{ fontSize: 12 }}>schedule</span>
+                    {weekday}, {time}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Body */}
+        <div className="p-4 flex flex-col gap-2 flex-1">
+          {event.imageUrl && (
+            <h3 className={`font-bold text-[15px] leading-snug line-clamp-2 ${past ? 'text-on-surface-variant' : 'text-on-surface'}`}>
+              {event.title}
+            </h3>
+          )}
+
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2 text-[13px] text-on-surface-variant">
+              <span className="material-symbols-outlined text-primary flex-shrink-0" style={{ fontSize: 15 }}>schedule</span>
+              <span>{past ? fullDate : `${weekday}, ${time}`}</span>
+            </div>
+            {event.location && (
+              <div className="flex items-center gap-2 text-[13px] text-on-surface-variant">
+                <span className="material-symbols-outlined text-secondary-container flex-shrink-0" style={{ fontSize: 15 }}>location_on</span>
+                <span className="truncate">{event.location}</span>
+              </div>
+            )}
+          </div>
+
+          {event.description && !past && (
+            <p className="text-[13px] text-on-surface-variant/80 leading-relaxed line-clamp-2 pt-2.5 border-t border-outline-variant/40">
               {event.description}
             </p>
           )}
+
+          <div className="mt-auto pt-3">
+            {past ? (
+              <span className="inline-flex items-center gap-1.5 text-[11px] text-outline font-medium">
+                <span className="material-symbols-outlined" style={{ fontSize: 13 }}>event_busy</span>
+                Past event
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-primary group-hover:gap-2.5 transition-all">
+                Learn more
+                <span className="material-symbols-outlined" style={{ fontSize: 16 }}>arrow_forward</span>
+              </span>
+            )}
+          </div>
         </div>
-      </div>
-    </article>
+      </article>
+    </Link>
   )
 }
 
@@ -88,44 +129,31 @@ export default async function PublicEventsPage() {
 
   return (
     <main className="flex-grow">
-      {/* Hero */}
-      <section className="bg-primary text-on-primary py-xl px-md md:px-lg">
-        <div className="max-w-container-max mx-auto">
-          <p className="font-label-bold text-[12px] uppercase tracking-[0.14em] text-secondary-container mb-xs">
-            Community
-          </p>
-          <h1 className="font-h1-mobile text-h1-mobile md:font-h2 md:text-h2 text-on-primary">
-            Events
-          </h1>
-          <p className="text-on-primary/80 mt-sm text-[15px] max-w-xl">
-            Stay up to date with meetings, celebrations and activities organised by Alubonets.
-          </p>
-        </div>
-      </section>
-
       <div className="max-w-container-max mx-auto px-md md:px-lg py-xl space-y-xxl">
 
         {/* Upcoming */}
         <section>
-          <h2 className="font-h3 text-[20px] text-primary mb-lg flex items-center gap-2">
-            <span className="material-symbols-outlined icon-fill text-secondary-container" style={{ fontSize: 22 }}>
-              event_upcoming
-            </span>
-            Upcoming events
-          </h2>
+          <div className="flex items-center gap-2.5 mb-lg">
+            <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-primary/10">
+              <span className="material-symbols-outlined icon-fill text-primary" style={{ fontSize: 20 }}>event_upcoming</span>
+            </div>
+            <div>
+              <h2 className="font-h3 text-[20px] text-on-surface leading-none">Upcoming events</h2>
+              <p className="text-[12px] text-on-surface-variant mt-0.5">{upcoming.length} event{upcoming.length !== 1 ? 's' : ''} scheduled</p>
+            </div>
+          </div>
+
           {upcoming.length === 0 ? (
             <div className="rounded-2xl border border-outline-variant bg-surface-container-low p-xl text-center">
-              <span className="material-symbols-outlined icon-fill text-outline/60 block mb-3" style={{ fontSize: 40 }}>
-                calendar_month
-              </span>
-              <p className="text-on-surface-variant font-medium">No upcoming events at the moment.</p>
-              <p className="text-on-surface-variant/70 text-[13px] mt-1">Check back soon — events are added regularly.</p>
+              <div className="w-14 h-14 rounded-2xl bg-primary/8 flex items-center justify-center mx-auto mb-4">
+                <span className="material-symbols-outlined icon-fill text-primary/50" style={{ fontSize: 32 }}>calendar_month</span>
+              </div>
+              <p className="text-on-surface font-semibold">No upcoming events at the moment.</p>
+              <p className="text-on-surface-variant text-[13px] mt-1">Check back soon — events are added regularly.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-md">
-              {upcoming.map((e) => (
-                <EventCard key={e.id} event={e} />
-              ))}
+              {upcoming.map((e) => <EventCard key={e.id} event={e} />)}
             </div>
           )}
         </section>
@@ -133,37 +161,17 @@ export default async function PublicEventsPage() {
         {/* Past */}
         {past.length > 0 && (
           <section>
-            <h2 className="font-h3 text-[18px] text-on-surface-variant mb-lg flex items-center gap-2">
-              <span className="material-symbols-outlined text-outline" style={{ fontSize: 20 }}>history</span>
-              Recent past events
-            </h2>
+            <div className="flex items-center gap-2.5 mb-lg">
+              <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-surface-container">
+                <span className="material-symbols-outlined text-outline" style={{ fontSize: 20 }}>history</span>
+              </div>
+              <div>
+                <h2 className="font-h3 text-[18px] text-on-surface-variant leading-none">Recent past events</h2>
+                <p className="text-[12px] text-outline mt-0.5">{past.length} past event{past.length !== 1 ? 's' : ''}</p>
+              </div>
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-md">
-              {past.map((e) => (
-                <article
-                  key={e.id}
-                  className="rounded-2xl border border-outline-variant bg-surface overflow-hidden flex flex-col opacity-65"
-                >
-                  {e.imageUrl ? (
-                    <img src={e.imageUrl} alt={e.title} className="w-full h-36 object-cover grayscale" />
-                  ) : (
-                    <div className="w-full h-20 bg-surface-container flex items-center justify-center">
-                      <span className="material-symbols-outlined text-outline/40" style={{ fontSize: 36 }}>event</span>
-                    </div>
-                  )}
-                  <div className="p-4 flex gap-3">
-                    <CalendarChip dateStr={e.startsAt} />
-                    <div className="min-w-0">
-                      <h3 className="font-medium text-[14px] text-on-surface line-through decoration-outline">{e.title}</h3>
-                      <p className="text-[12px] text-on-surface-variant mt-0.5">
-                        {new Date(e.startsAt).toLocaleDateString(undefined, {
-                          month: 'short', day: 'numeric', year: 'numeric',
-                        })}
-                        {e.location ? ` · ${e.location}` : ''}
-                      </p>
-                    </div>
-                  </div>
-                </article>
-              ))}
+              {past.map((e) => <EventCard key={e.id} event={e} past />)}
             </div>
           </section>
         )}

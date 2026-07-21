@@ -177,6 +177,10 @@ export async function getMemberDashboardData(userId: string) {
   return { contributions, total, announcements, events, documents, welfare }
 }
 
+export async function getPublicProject(id: string) {
+  return prisma.project.findUnique({ where: { id } })
+}
+
 export async function getPublicGallery() {
   return prisma.galleryPhoto.findMany({
     where: { isPublic: true },
@@ -346,6 +350,43 @@ export async function createEvent(data: {
   isPublic?: boolean
 }) {
   return prisma.event.create({ data })
+}
+
+export async function deleteAnnouncement(id: string) {
+  return prisma.announcement.delete({ where: { id } })
+}
+
+export async function getRecentItems() {
+  const since = new Date(Date.now() - 48 * 60 * 60 * 1000)
+  const [events, projects, photos] = await Promise.all([
+    prisma.event.findMany({
+      where: { createdAt: { gte: since }, startsAt: { gte: new Date() } },
+      orderBy: { createdAt: 'desc' },
+      take: 5,
+      select: { id: true, title: true, location: true, imageUrl: true, createdAt: true },
+    }),
+    prisma.project.findMany({
+      where: { createdAt: { gte: since } },
+      orderBy: { createdAt: 'desc' },
+      take: 5,
+      select: { id: true, title: true, status: true, imageUrl: true, createdAt: true },
+    }),
+    prisma.galleryPhoto.findMany({
+      where: { uploadedAt: { gte: since }, isPublic: true },
+      orderBy: { uploadedAt: 'desc' },
+      take: 5,
+      select: { id: true, url: true, caption: true, category: true, uploadedAt: true },
+    }),
+  ])
+  return { events, projects, photos }
+}
+
+export async function deleteEvent(id: string) {
+  return prisma.event.delete({ where: { id } })
+}
+
+export async function deleteEvents(ids: string[]) {
+  return prisma.event.deleteMany({ where: { id: { in: ids } } })
 }
 
 export async function createMeeting(data: {

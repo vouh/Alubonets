@@ -47,31 +47,13 @@ function enhanceNavyCurve() {
   }
 }
 
-function markReveals() {
-  const main = document.querySelector('main')
-  if (!main) return
-  const blocks = main.querySelectorAll(':scope > section, :scope > div')
-  blocks.forEach((block, i) => {
-    if (block.classList.contains('site-motto-band')) return
-    const cards = block.querySelectorAll(
-      ':scope .grid > div, :scope .value-card, :scope article, :scope .break-inside-avoid'
-    )
-    if (cards.length) {
-      cards.forEach((card, ki) => {
-        if (card.classList.contains('reveal')) return
-        card.classList.add('reveal')
-        ;(card as HTMLElement).style.setProperty('--reveal-delay', Math.min(ki * 80, 320) + 'ms')
-      })
-      const heading = block.querySelector('h1, h2')
-      if (heading && !heading.classList.contains('reveal')) {
-        heading.classList.add('reveal')
-        ;(heading as HTMLElement).style.setProperty('--reveal-delay', '0ms')
-      }
-    } else if (!block.classList.contains('reveal')) {
-      block.classList.add('reveal')
-      ;(block as HTMLElement).style.setProperty('--reveal-delay', Math.min(i * 60, 180) + 'ms')
-    }
-  })
+// Trigger CSS animations by toggling data-pr on <html>.
+// This never touches React-managed DOM nodes, avoiding hydration mismatches.
+function triggerPageReveal() {
+  const html = document.documentElement
+  html.removeAttribute('data-pr')
+  void html.offsetHeight // force reflow so CSS animations restart
+  html.setAttribute('data-pr', '1')
 }
 
 function observeReveals() {
@@ -110,7 +92,7 @@ export default function SiteScripts() {
 
   useEffect(() => {
     enhanceNavyCurve()
-    markReveals()
+    triggerPageReveal()
     observeReveals()
   }, [pathname])
 

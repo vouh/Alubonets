@@ -11,14 +11,15 @@ values
     'gallery',
     'gallery',
     true,
-    10485760,
+    2097152,
     array['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+    -- event cover images are stored under the event-covers/ prefix in this bucket
   ),
   (
     'documents',
     'documents',
     false,
-    26214400,
+    5242880,
     array[
       'application/pdf',
       'application/msword',
