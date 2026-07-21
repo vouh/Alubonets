@@ -11,6 +11,7 @@ type MemberOption = {
 
 export default function AnnouncementComposer({ members }: { members: MemberOption[] }) {
   const [audience, setAudience] = useState<'ALL' | 'SELECTED'>('ALL')
+  const [sendEmail, setSendEmail] = useState(true)
   const [pickerOpen, setPickerOpen] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const pickerRef = useRef<HTMLDivElement>(null)
@@ -57,6 +58,7 @@ export default function AnnouncementComposer({ members }: { members: MemberOptio
       />
 
       <input type="hidden" name="audience" value={audience} />
+      <input type="hidden" name="sendEmail" value={sendEmail ? 'on' : 'off'} />
       {audience === 'SELECTED' &&
         [...selected].map((id) => <input key={id} type="hidden" name="memberIds" value={id} />)}
 
@@ -80,6 +82,25 @@ export default function AnnouncementComposer({ members }: { members: MemberOptio
           Specific members
         </label>
       </div>
+
+      {/* Email toggle — only shown for broadcast */}
+      {audience === 'ALL' && (
+        <button
+          type="button"
+          onClick={() => setSendEmail((v) => !v)}
+          className={`flex items-center gap-2.5 px-3 py-2 rounded-xl border text-left transition-colors text-[12px] ${
+            sendEmail
+              ? 'border-primary/40 bg-primary/5 text-primary dark:text-blue-300'
+              : 'border-outline-variant bg-surface-container text-on-surface-variant'
+          }`}
+        >
+          <div className={`relative flex-shrink-0 w-8 h-4 rounded-full transition-colors ${sendEmail ? 'bg-primary' : 'bg-outline/40'}`}>
+            <span className={`absolute top-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform ${sendEmail ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
+          </div>
+          <span className="material-symbols-outlined" style={{ fontSize: 14 }}>mail</span>
+          {sendEmail ? 'Also sending to all member emails' : 'Send by email too'}
+        </button>
+      )}
 
       {audience === 'SELECTED' && (
         <div className="relative" ref={pickerRef}>

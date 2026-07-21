@@ -407,6 +407,51 @@ export const getOldAnnouncementsCount = unstable_cache(
   { tags: [TAGS.announcements], revalidate: 300 },
 )
 
+export const getActiveMembers = unstable_cache(
+  async () => {
+    return prisma.user.findMany({
+      where: { status: 'ACTIVE' },
+      select: { id: true, fullName: true },
+      orderBy: { fullName: 'asc' },
+    })
+  },
+  ['active-members-list'],
+  { tags: [TAGS.members], revalidate: 300 },
+)
+
+export const getPastEventsCount = unstable_cache(
+  async () => {
+    return prisma.event.count({ where: { startsAt: { lt: new Date() } } })
+  },
+  ['past-events-count'],
+  { tags: [TAGS.events], revalidate: 3600 },
+)
+
+export const getOldGalleryCount = unstable_cache(
+  async () => {
+    const cutoff = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000)
+    return prisma.galleryPhoto.count({ where: { uploadedAt: { lt: cutoff } } })
+  },
+  ['old-gallery-count'],
+  { tags: [TAGS.gallery], revalidate: 3600 },
+)
+
+export const getOrganizerProjects = unstable_cache(
+  async () => {
+    const projects = await prisma.project.findMany({ orderBy: { updatedAt: 'desc' } })
+    return projects.map((p) => ({
+      id: p.id,
+      title: p.title,
+      description: p.description,
+      status: p.status as 'UPCOMING' | 'ONGOING' | 'COMPLETED',
+      imageUrl: p.imageUrl ?? null,
+      updatedAt: p.updatedAt.toISOString(),
+    }))
+  },
+  ['organizer-projects'],
+  { tags: [TAGS.projects], revalidate: 60 },
+)
+
 // ─── Write functions (not cached) ──────────────────────────────────────────────
 
 export type CreateContributionInput = {
@@ -487,6 +532,28 @@ export async function createEvent(data: {
   isPublic?: boolean
 }) {
   return prisma.event.create({ data })
+}
+
+export async function updateEvent(id: string, data: {
+  title?: string
+  description?: string | null
+  location?: string | null
+  startsAt?: Date
+  imageUrl?: string | null
+  isPublic?: boolean
+}) {
+  return prisma.event.update({ where: { id }, data })
+}
+
+export async function updateGalleryPhoto(id: string, data: {
+  caption?: string | null
+  category?: string | null
+}) {
+  return prisma.galleryPhoto.update({ where: { id }, data })
+}
+
+export async function deleteProject(id: string) {
+  return prisma.project.delete({ where: { id } })
 }
 
 export async function deleteEvent(id: string) {

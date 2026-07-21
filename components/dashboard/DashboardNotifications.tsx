@@ -13,6 +13,12 @@ type NotifItem = {
   createdAt: string
 }
 
+type CleanupCounts = {
+  announcements: number
+  pastEvents: number
+  oldGallery: number
+}
+
 const SEEN_KEY    = 'alubonets-notif-seen-v1'
 const CLEANUP_KEY = 'alubonets-cleanup-reminded'
 const SEEN_TTL    = 7  * 24 * 60 * 60 * 1000  // 7 days — once dismissed, gone for a week
@@ -60,16 +66,22 @@ const CFG = {
 
 export default function DashboardNotifications() {
   const [items, setItems] = useState<NotifItem[]>([])
-  const [cleanupCount, setCleanupCount] = useState(0)
+  const [cleanupCounts, setCleanupCounts] = useState<CleanupCounts>({ announcements: 0, pastEvents: 0, oldGallery: 0 })
   const [showCleanup, setShowCleanup] = useState(false)
 
   useEffect(() => {
     fetch('/api/notifications')
       .then((r) => r.json())
-      .then(({ items: fetched, cleanupCount: count }: { items: NotifItem[]; cleanupCount: number }) => {
+      .then(({ items: fetched, announcementCount = 0, pastEventsCount = 0, oldGalleryCount = 0 }: {
+        items: NotifItem[]
+        announcementCount: number
+        pastEventsCount: number
+        oldGalleryCount: number
+      }) => {
         setItems(fetched.filter((i) => !isRecentlySeen(i.id)))
-        if (count > 0 && shouldShowCleanupReminder()) {
-          setCleanupCount(count)
+        const hasCleanup = (announcementCount > 0 || pastEventsCount > 0 || oldGalleryCount > 0) && shouldShowCleanupReminder()
+        if (hasCleanup) {
+          setCleanupCounts({ announcements: announcementCount, pastEvents: pastEventsCount, oldGallery: oldGalleryCount })
           setShowCleanup(true)
         }
       })
@@ -110,7 +122,7 @@ export default function DashboardNotifications() {
 
       {/* Cleanup reminder card */}
       {showCleanup && (
-        <CleanupCard count={cleanupCount} onDismiss={handleDismissCleanup} />
+        <CleanupCard counts={cleanupCounts} onDismiss={handleDismissCleanup} />
       )}
 
       {items.slice(0, 4).map((item) => (
@@ -120,11 +132,16 @@ export default function DashboardNotifications() {
   )
 }
 
-function CleanupCard({ count, onDismiss }: { count: number; onDismiss: () => void }) {
+function CleanupCard({ counts, onDismiss }: { counts: CleanupCounts; onDismiss: () => void }) {
   useEffect(() => {
     const t = setTimeout(onDismiss, 15_000)
     return () => clearTimeout(t)
   }, [onDismiss])
+
+  const lines: { label: string; count: number; href: string }[] = []
+  if (counts.announcements > 0) lines.push({ label: `${counts.announcements} old announcement${counts.announcements > 1 ? 's' : ''}`, count: counts.announcements, href: '/announcements' })
+  if (counts.pastEvents > 0) lines.push({ label: `${counts.pastEvents} past event${counts.pastEvents > 1 ? 's' : ''}`, count: counts.pastEvents, href: '/dashboard/organizer/events' })
+  if (counts.oldGallery > 0) lines.push({ label: `${counts.oldGallery} old gallery photo${counts.oldGallery > 1 ? 's' : ''}`, count: counts.oldGallery, href: '/dashboard/organizer/gallery' })
 
   return (
     <div className="rounded-2xl border border-amber-300/60 dark:border-amber-800/50 bg-surface dark:bg-[#0d1729] shadow-2xl overflow-hidden" style={{ animation: 'notif-slide 0.25s ease both' }}>
@@ -133,12 +150,18 @@ function CleanupCard({ count, onDismiss }: { count: number; onDismiss: () => voi
           <span className="material-symbols-outlined icon-fill text-amber-600 dark:text-amber-400" style={{ fontSize: 22 }}>auto_delete</span>
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[10px] font-bold uppercase tracking-wider mb-0.5 text-amber-600 dark:text-amber-400">Cleanup reminder</p>
-          <p className="text-[13px] font-semibold text-on-surface dark:text-blue-50 leading-snug">
-            {count} old announcement{count > 1 ? 's' : ''} need attention
-          </p>
-          <p className="text-[11px] text-on-surface-variant dark:text-blue-200/50 mt-0.5">
-            Consider removing announcements older than 48 hours.
+          <p className="text-[10px] font-bold uppercase tracking-wider mb-1 text-amber-600 dark:text-amber-400">Cleanup reminder</p>
+          <div className="space-y-0.5">
+            {lines.map((l) => (
+              <Link key={l.href} href={l.href} onClick={onDismiss}
+                className="flex items-center gap-1.5 text-[12px] font-medium text-on-surface dark:text-blue-50 hover:text-primary transition-colors">
+                <span className="material-symbols-outlined text-amber-500" style={{ fontSize: 12 }}>chevron_right</span>
+                {l.label}
+              </Link>
+            ))}
+          </div>
+          <p className="text-[11px] text-on-surface-variant dark:text-blue-200/50 mt-1">
+            Consider archiving old records.
           </p>
         </div>
         <button
@@ -148,14 +171,6 @@ function CleanupCard({ count, onDismiss }: { count: number; onDismiss: () => voi
           <span className="material-symbols-outlined" style={{ fontSize: 15 }}>close</span>
         </button>
       </div>
-      <Link
-        href="/announcements"
-        onClick={onDismiss}
-        className="flex items-center justify-between px-3.5 py-2 bg-amber-50 dark:bg-amber-950/30 border-t border-amber-200/50 dark:border-amber-800/30 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors"
-      >
-        <span className="text-[12px] font-semibold text-amber-700 dark:text-amber-400">Go to announcements</span>
-        <span className="material-symbols-outlined text-amber-700 dark:text-amber-400" style={{ fontSize: 14 }}>arrow_forward</span>
-      </Link>
     </div>
   )
 }

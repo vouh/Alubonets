@@ -17,13 +17,16 @@ import {
   deleteEvents,
   deleteGalleryPhoto,
   deleteGalleryPhotos,
+  deleteProject,
   markAnnouncementsRead,
   sendAnnouncement,
+  updateEvent,
+  updateGalleryPhoto,
   updateWelfareStatus,
   upsertProject,
 } from '@/lib/data/queries'
 import { prisma } from '@/lib/prisma'
-import { sendBroadcastEmail, sendContributionReceiptEmail, sendGalleryNotificationEmail, sendWelfareStatusEmail } from '@/lib/email/resend'
+import { sendBroadcastEmail, sendContributionReceiptEmail, sendWelfareStatusEmail } from '@/lib/email/resend'
 import { writeAudit } from '@/lib/audit'
 
 export async function actionCreateContribution(formData: FormData) {
@@ -201,11 +204,14 @@ export async function actionCreateEvent(formData: FormData) {
 
   const isPublic = formData.get('isPublic') !== 'off'
   const sendNotif = formData.get('sendNotification') !== 'off'
+  const sendEmail = formData.get('sendEmail') !== 'off'
+  const emailAudience = String(formData.get('emailAudience') || 'ALL')
+  const emailMemberIds = formData.getAll('emailMemberId').map(String).filter(Boolean)
   const imageUrl = String(formData.get('imageUrl') || '') || undefined
   const location = String(formData.get('location') || '') || undefined
   const description = String(formData.get('description') || '') || undefined
 
-  await createEvent({
+  const event = await createEvent({
     title,
     description,
     location,
@@ -214,23 +220,39 @@ export async function actionCreateEvent(formData: FormData) {
     isPublic,
   })
 
+  const actorId = actor.id
+  const dateStr = new Date(startsAt).toLocaleString('en-KE', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  })
+  const lines = [`📅 ${dateStr}`]
+  if (location) lines.push(`📍 ${location}`)
+  if (description) lines.push(description)
+  if (!isPublic) lines.push('(Members only — not listed on the public website)')
+
   if (sendNotif) {
-    const authorId = actor.id
-    const dateStr = new Date(startsAt).toLocaleString('en-KE', {
-      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
-      hour: '2-digit', minute: '2-digit',
-    })
-    const lines = [`📅 ${dateStr}`]
-    if (location) lines.push(`📍 ${location}`)
-    if (description) lines.push(description)
-    if (!isPublic) lines.push('(Members only — not listed on the public website)')
-    // Run after response is sent — doesn't block the modal from closing
     after(() => sendAnnouncement({
-      authorId,
+      authorId: actorId,
       title: `New event: ${title}`,
       content: lines.join('\n'),
       broadcast: true,
-    }))
+    }).catch(console.error))
+  }
+
+  if (sendEmail) {
+    const memberIds = emailAudience === 'SELECTED' && emailMemberIds.length ? emailMemberIds : undefined
+    const appBaseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'
+    const paragraphs = lines.map((l) => `<p style="margin:0 0 6px;">${l}</p>`).join('')
+    after(() => sendBroadcastEmail({
+      subject: `New event: ${title}`,
+      title: `Upcoming event — ${title}`,
+      body: paragraphs,
+      ctaLabel: 'View Event',
+      ctaUrl: `${appBaseUrl}/events/${event.id}`,
+      template: 'event_notification',
+      actorId,
+      memberIds,
+    }).catch(console.error))
   }
 
   revalidatePath('/dashboard/organizer')
@@ -289,13 +311,19 @@ export async function actionCreateGallery(formData: FormData) {
     caption,
     category,
     uploadedBy: actor.id,
-    isPublic: true, // always public — organizer/admin additions go live immediately
+    isPublic: true,
   })
-  // Notify members by email in the background (no in-app announcement → no cleanup queue)
-  const actorId = actor.id
-  after(() =>
-    sendGalleryNotificationEmail({ caption, category, actorId }).catch(console.error)
-  )
+  // In-app announcement for all members (visible in notification toasts)
+  const authorId = actor.id
+  const lines = ['A new photo has been added to the gallery.']
+  if (caption) lines.push(`"${caption}"`)
+  if (category) lines.push(`Category: ${category}`)
+  after(() => sendAnnouncement({
+    authorId,
+    title: 'New photo added to gallery',
+    content: lines.join('\n'),
+    broadcast: true,
+  }).catch(console.error))
   revalidatePath('/dashboard/organizer')
   revalidatePath('/dashboard/organizer/gallery')
   revalidatePath('/admin')
@@ -334,7 +362,7 @@ export async function actionApproveGallery(formData: FormData) {
 }
 
 export async function actionUpsertProject(formData: FormData) {
-  await requireActiveRole(['ADMIN', 'EXECUTIVE', 'ORGANIZER'])
+  const actor = await requireActiveRole(['ADMIN', 'EXECUTIVE', 'ORGANIZER'])
   const title = String(formData.get('title') || '')
   const description = String(formData.get('description') || '')
   const status = String(formData.get('status') || 'UPCOMING') as
@@ -342,15 +370,91 @@ export async function actionUpsertProject(formData: FormData) {
     | 'ONGOING'
     | 'COMPLETED'
   if (!title || !description) throw new Error('Title and description required')
-  await upsertProject({
-    id: String(formData.get('id') || '') || undefined,
+  const existingId = String(formData.get('id') || '') || undefined
+  const project = await upsertProject({
+    id: existingId,
     title,
     description,
     status,
     imageUrl: String(formData.get('imageUrl') || '') || undefined,
   })
+
+  // Only notify on creation (not updates)
+  if (!existingId) {
+    const actorId = actor.id
+    const sendEmail = formData.get('sendEmail') !== 'off'
+    const emailAudience = String(formData.get('emailAudience') || 'ALL')
+    const emailMemberIds = formData.getAll('emailMemberId').map(String).filter(Boolean)
+
+    // Always create in-app announcement for new projects
+    after(() => sendAnnouncement({
+      authorId: actorId,
+      title: `New project: ${title}`,
+      content: description,
+      broadcast: true,
+    }).catch(console.error))
+
+    if (sendEmail) {
+      const memberIds = emailAudience === 'SELECTED' && emailMemberIds.length ? emailMemberIds : undefined
+      const appBaseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'
+      after(() => sendBroadcastEmail({
+        subject: `New project: ${title}`,
+        title: `New project — ${title}`,
+        body: `<p style="margin:0 0 8px;">${description}</p>`,
+        ctaLabel: 'View Projects',
+        ctaUrl: `${appBaseUrl}/projects/${project.id}`,
+        template: 'project_notification',
+        actorId,
+        memberIds,
+      }).catch(console.error))
+    }
+  }
+
   revalidatePath('/dashboard/executive')
   revalidatePath('/dashboard/organizer')
+  revalidatePath('/projects')
+  revalidateTag(TAGS.projects)
+}
+
+export async function actionUpdateEvent(id: string, formData: FormData) {
+  await requireActiveRole(['ORGANIZER', 'ADMIN', 'SECRETARY'])
+  const title = String(formData.get('title') || '')
+  const startsAt = String(formData.get('startsAt') || '')
+  if (!title || !startsAt) throw new Error('Title and start date required')
+  const isPublic = formData.get('isPublic') !== 'off'
+  const imageUrl = String(formData.get('imageUrl') || '') || null
+  const location = String(formData.get('location') || '') || null
+  const description = String(formData.get('description') || '') || null
+  await updateEvent(id, {
+    title, description, location,
+    imageUrl: imageUrl ?? undefined,
+    startsAt: new Date(startsAt),
+    isPublic,
+  })
+  EVENT_PATHS.forEach((p) => revalidatePath(p))
+  revalidateTag(TAGS.events)
+}
+
+export async function actionUpdateGalleryPhoto(formData: FormData) {
+  await requireActiveRole(['ORGANIZER', 'ADMIN'])
+  const id = String(formData.get('id') || '')
+  if (!id) throw new Error('Photo ID required')
+  const caption = String(formData.get('caption') || '') || null
+  const category = String(formData.get('category') || '') || null
+  await updateGalleryPhoto(id, { caption, category })
+  revalidatePath('/dashboard/organizer/gallery')
+  revalidatePath('/gallery')
+  revalidatePath('/admin')
+  revalidateTag(TAGS.gallery)
+}
+
+export async function actionDeleteProject(id: string) {
+  await requireActiveRole(['ADMIN', 'EXECUTIVE', 'ORGANIZER'])
+  await deleteProject(id)
+  revalidatePath('/dashboard/executive')
+  revalidatePath('/dashboard/executive/projects')
+  revalidatePath('/dashboard/organizer')
+  revalidatePath('/dashboard/organizer/projects')
   revalidatePath('/projects')
   revalidateTag(TAGS.projects)
 }

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getSessionProfile } from '@/lib/auth/session'
-import { getRecentItems, getOldAnnouncementsCount } from '@/lib/data/queries'
+import { getRecentItems, getOldAnnouncementsCount, getPastEventsCount, getOldGalleryCount } from '@/lib/data/queries'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,12 +12,13 @@ export async function GET() {
 
   const isManager = MANAGER_ROLES.includes(profile.role)
   // Managers see 48 h of activity; regular members only see the last 6 h
-  // (toasts feel urgent — once a member has seen them they stay gone via SEEN_TTL)
   const windowHours = isManager ? 48 : 6
 
-  const [{ events, projects, photos }, cleanupCount] = await Promise.all([
+  const [{ events, projects, photos }, announcementCount, pastEventsCount, oldGalleryCount] = await Promise.all([
     getRecentItems(windowHours),
     isManager ? getOldAnnouncementsCount() : Promise.resolve(0),
+    isManager ? getPastEventsCount() : Promise.resolve(0),
+    isManager ? getOldGalleryCount() : Promise.resolve(0),
   ])
 
   const items = [
@@ -50,5 +51,5 @@ export async function GET() {
     })),
   ].sort((a, b) => b.createdAt.localeCompare(a.createdAt))
 
-  return NextResponse.json({ items, cleanupCount })
+  return NextResponse.json({ items, announcementCount, pastEventsCount, oldGalleryCount })
 }

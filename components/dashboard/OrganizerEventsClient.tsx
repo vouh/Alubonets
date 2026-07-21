@@ -6,16 +6,20 @@ import { actionDeleteEvent, actionDeleteEvents } from '@/app/actions/domain'
 import CreateEventForm from './CreateEventForm'
 import EventsGrid, { EventRow } from './EventsGrid'
 
+type MemberOption = { id: string; fullName: string }
+
 type Props = {
   upcoming: EventRow[]
   past: EventRow[]
+  members: MemberOption[]
 }
 
-export default function OrganizerEventsClient({ upcoming, past }: Props) {
+export default function OrganizerEventsClient({ upcoming, past, members }: Props) {
   const [open, setOpen] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [isPending, startTransition] = useTransition()
   const [detail, setDetail] = useState<EventRow | null>(null)
+  const [editing, setEditing] = useState<EventRow | null>(null)
   const [localUpcoming, setLocalUpcoming] = useState(upcoming)
   const [localPast, setLocalPast] = useState(past)
 
@@ -49,6 +53,12 @@ export default function OrganizerEventsClient({ upcoming, past }: Props) {
     setLocalPast((prev) => prev.filter((e) => e.id !== id))
     setSelected((prev) => { const n = new Set(prev); n.delete(id); return n })
     startTransition(() => { actionDeleteEvent(id) })
+  }
+
+  function handleOptimisticUpdate(updated: EventRow) {
+    setEditing(null)
+    setLocalUpcoming((prev) => prev.map((e) => e.id === updated.id ? updated : e))
+    setLocalPast((prev) => prev.map((e) => e.id === updated.id ? updated : e))
   }
 
   function handleBulkDelete() {
@@ -307,11 +317,58 @@ export default function OrganizerEventsClient({ upcoming, past }: Props) {
                 >
                   Close
                 </button>
+                <button
+                  type="button"
+                  onClick={() => { setEditing(detail); setDetail(null) }}
+                  className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-primary text-on-primary hover:opacity-90 py-2.5 text-[13px] font-semibold transition-opacity"
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: 15 }}>edit</span>
+                  Edit event
+                </button>
               </div>
             </div>
           </div>
         , document.body)
       })()}
+
+      {/* Edit event modal */}
+      {editing && createPortal(
+        <div
+          className="fixed inset-0 z-[150] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+          onClick={() => setEditing(null)}
+        >
+          <div
+            className="relative w-full max-w-lg rounded-2xl border border-outline-variant dark:border-[#1a2d4f] bg-surface dark:bg-[#0d1729] p-5 shadow-2xl max-h-[90vh] overflow-y-auto"
+            onClick={(ev) => ev.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 dark:bg-primary/20">
+                  <span className="material-symbols-outlined icon-fill text-primary" style={{ fontSize: 18 }}>edit</span>
+                </div>
+                <div>
+                  <h2 className="font-semibold text-[14px] text-on-surface dark:text-blue-50">Edit event</h2>
+                  <p className="text-[11px] text-on-surface-variant dark:text-blue-200/50 truncate max-w-[200px]">{editing.title}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditing(null)}
+                className="rounded-full p-1.5 hover:bg-surface-container dark:hover:bg-[#111f36] text-on-surface-variant transition-colors"
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: 20 }}>close</span>
+              </button>
+            </div>
+            <CreateEventForm
+              key={editing.id}
+              initial={editing}
+              onSuccess={handleOptimisticUpdate}
+              members={members}
+            />
+          </div>
+        </div>,
+        document.body
+      )}
 
       {/* Create event modal */}
       {open && createPortal(
@@ -344,7 +401,7 @@ export default function OrganizerEventsClient({ upcoming, past }: Props) {
                 <span className="material-symbols-outlined" style={{ fontSize: 20 }}>close</span>
               </button>
             </div>
-            <CreateEventForm onOptimisticAdd={handleOptimisticAdd} />
+            <CreateEventForm onOptimisticAdd={handleOptimisticAdd} members={members} />
           </div>
         </div>
       , document.body)}

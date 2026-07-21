@@ -1,8 +1,16 @@
 'use client'
 
 import { useRef, useState, useEffect } from 'react'
-import { actionCreateEvent } from '@/app/actions/domain'
+import { actionCreateEvent, actionUpdateEvent } from '@/app/actions/domain'
 import { createClient } from '@/utils/supabase/client'
+
+type MemberOption = { id: string; fullName: string }
+
+function toDateTimeLocal(isoStr: string): string {
+  const d = new Date(isoStr)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
 
 const MAX_PX   = 1024
 const MAX_BYTES = 2 * 1024 * 1024
@@ -68,7 +76,8 @@ async function uploadWithProgress(
 
 type Draft = {
   title: string; startsAt: string; location: string
-  description: string; uploadedUrl: string; isPublic: boolean; sendNotif: boolean
+  description: string; uploadedUrl: string; isPublic: boolean
+  sendNotif: boolean; sendEmail: boolean; emailAudience: 'ALL' | 'SELECTED'
 }
 
 function loadDraft(): Draft | null {
@@ -88,17 +97,33 @@ type OptimisticEvent = {
   location?: string | null; startsAt: string; imageUrl?: string | null; isPublic?: boolean
 }
 
-export default function CreateEventForm({ onOptimisticAdd }: { onOptimisticAdd?: (e: OptimisticEvent) => void }) {
-  const [title, setTitle]             = useState('')
-  const [startsAt, setStartsAt]       = useState('')
-  const [location, setLocation]       = useState('')
-  const [description, setDescription] = useState('')
-  const [isPublic, setIsPublic]       = useState(true)
+export default function CreateEventForm({
+  onOptimisticAdd,
+  onSuccess,
+  members = [],
+  initial,
+}: {
+  onOptimisticAdd?: (e: OptimisticEvent) => void
+  onSuccess?: (e: OptimisticEvent) => void
+  members?: MemberOption[]
+  initial?: OptimisticEvent
+}) {
+  const isEditing = !!initial?.id
+  const [title, setTitle]             = useState(initial?.title ?? '')
+  const [startsAt, setStartsAt]       = useState(() => initial?.startsAt ? toDateTimeLocal(initial.startsAt) : '')
+  const [location, setLocation]       = useState(initial?.location ?? '')
+  const [description, setDescription] = useState(initial?.description ?? '')
+  const [isPublic, setIsPublic]       = useState(initial?.isPublic !== false)
   const [sendNotif, setSendNotif]     = useState(true)
+  const [sendEmail, setSendEmail]     = useState(true)
+  const [emailAudience, setEmailAudience] = useState<'ALL' | 'SELECTED'>('ALL')
+  const [selectedEmailMembers, setSelectedEmailMembers] = useState<Set<string>>(new Set())
+  const [emailPickerOpen, setEmailPickerOpen] = useState(false)
+  const emailPickerRef = useRef<HTMLDivElement>(null)
 
-  // upload track separately from paste URL
+  // upload track separately from paste URL; in edit mode seed with existing image
   const [uploadedUrl, setUploadedUrl] = useState('')
-  const [pastedUrl, setPastedUrl]     = useState('')
+  const [pastedUrl, setPastedUrl]     = useState(initial?.imageUrl ?? '')
   const [uploadProgress, setUploadProgress] = useState<number | null>(null)
   const [uploadError, setUploadError] = useState('')
   const [uploadInfo, setUploadInfo]   = useState('')
@@ -111,6 +136,18 @@ export default function CreateEventForm({ onOptimisticAdd }: { onOptimisticAdd?:
 
   // effective image URL: uploaded takes precedence over pasted
   const effectiveUrl = uploadedUrl || pastedUrl
+
+  // close email picker on outside click
+  useEffect(() => {
+    if (!emailPickerOpen) return
+    const onOutside = (e: MouseEvent) => {
+      if (emailPickerRef.current && !emailPickerRef.current.contains(e.target as Node)) {
+        setEmailPickerOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', onOutside)
+    return () => document.removeEventListener('mousedown', onOutside)
+  }, [emailPickerOpen])
 
   // load draft on mount
   useEffect(() => {
@@ -128,6 +165,8 @@ export default function CreateEventForm({ onOptimisticAdd }: { onOptimisticAdd?:
     setUploadedUrl(d.uploadedUrl)
     setIsPublic(d.isPublic)
     setSendNotif(d.sendNotif)
+    if (d.sendEmail !== undefined) setSendEmail(d.sendEmail)
+    if (d.emailAudience) setEmailAudience(d.emailAudience)
     setHasDraft(false)
   }
 
@@ -136,11 +175,26 @@ export default function CreateEventForm({ onOptimisticAdd }: { onOptimisticAdd?:
     draftTimer.current = setTimeout(() => {
       saveDraft({
         title, startsAt, location, description,
-        uploadedUrl, isPublic, sendNotif,
+        uploadedUrl, isPublic, sendNotif, sendEmail, emailAudience,
         ...patch,
       })
     }, 1200)
   }
+
+  function toggleEmailMember(id: string) {
+    setSelectedEmailMembers((prev) => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  const emailPickerLabel =
+    selectedEmailMembers.size === 0
+      ? 'Select members…'
+      : selectedEmailMembers.size === 1
+        ? members.find((m) => selectedEmailMembers.has(m.id))?.fullName || '1 member'
+        : `${selectedEmailMembers.size} members selected`
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -176,13 +230,37 @@ export default function CreateEventForm({ onOptimisticAdd }: { onOptimisticAdd?:
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!title || !startsAt) return
+
+    const fd = new FormData()
+    fd.set('title', title)
+    fd.set('startsAt', startsAt)
+    fd.set('location', location)
+    fd.set('description', description)
+    fd.set('imageUrl', effectiveUrl)
+    fd.set('isPublic', isPublic ? 'on' : 'off')
+
+    if (isEditing) {
+      // Edit mode — optimistic update and close
+      onSuccess?.({
+        id: initial!.id,
+        title,
+        description: description || null,
+        location: location || null,
+        startsAt: new Date(startsAt).toISOString(),
+        imageUrl: effectiveUrl || null,
+        isPublic,
+      })
+      actionUpdateEvent(initial!.id, fd).catch(console.error)
+      return
+    }
+
+    // Create mode
     if (new Date(startsAt) < new Date()) {
       setDateError('Event date cannot be in the past')
       return
     }
     setDateError('')
 
-    // Show immediately in the list and close modal
     onOptimisticAdd?.({
       id: `opt-${Date.now()}`,
       title,
@@ -194,23 +272,20 @@ export default function CreateEventForm({ onOptimisticAdd }: { onOptimisticAdd?:
     })
     clearDraft()
 
-    // Persist in background — no await, no spinner
-    const fd = new FormData()
-    fd.set('title', title)
-    fd.set('startsAt', startsAt)
-    fd.set('location', location)
-    fd.set('description', description)
-    fd.set('imageUrl', effectiveUrl)
-    fd.set('isPublic', isPublic ? 'on' : 'off')
     fd.set('sendNotification', sendNotif ? 'on' : 'off')
+    fd.set('sendEmail', sendEmail ? 'on' : 'off')
+    fd.set('emailAudience', emailAudience)
+    if (emailAudience === 'SELECTED') {
+      selectedEmailMembers.forEach((id) => fd.append('emailMemberId', id))
+    }
     actionCreateEvent(fd).catch(console.error)
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
 
-      {/* Draft restore banner */}
-      {hasDraft && (
+      {/* Draft restore banner — create mode only */}
+      {!isEditing && hasDraft && (
         <div className="flex items-center justify-between gap-3 rounded-xl border border-amber-300/60 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-700/40 px-4 py-3">
           <div className="flex items-center gap-2 min-w-0">
             <span className="material-symbols-outlined text-amber-600 dark:text-amber-400 flex-shrink-0" style={{ fontSize: 17 }}>edit_note</span>
@@ -405,30 +480,110 @@ export default function CreateEventForm({ onOptimisticAdd }: { onOptimisticAdd?:
           </div>
         </button>
 
-        <button type="button" onClick={() => { setSendNotif((v) => !v); scheduleSave({ sendNotif: !sendNotif }) }}
-          className={`flex items-center gap-3 p-3 rounded-xl border text-left transition-colors ${sendNotif ? 'border-secondary-container/60 bg-secondary-container/5 dark:bg-secondary-container/10' : 'border-outline-variant dark:border-[#1e3461] bg-surface-container dark:bg-[#111f36]'}`}>
-          <div className={`relative flex-shrink-0 w-9 h-5 rounded-full transition-colors ${sendNotif ? 'bg-secondary-container' : 'bg-outline/40 dark:bg-[#2a3f66]'}`}>
-            <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${sendNotif ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
-          </div>
-          <div>
-            <p className="text-[12px] font-semibold text-on-surface dark:text-blue-50 flex items-center gap-1.5">
-              <span className="material-symbols-outlined" style={{ fontSize: 14 }}>notifications</span>
-              Notify members
-            </p>
-            <p className="text-[11px] text-on-surface-variant dark:text-blue-200/50 mt-0.5">
-              {sendNotif ? 'Send notification to all active members' : 'No notification will be sent'}
-            </p>
-          </div>
-        </button>
+        {!isEditing && (
+          <button type="button" onClick={() => { setSendNotif((v) => !v); scheduleSave({ sendNotif: !sendNotif }) }}
+            className={`flex items-center gap-3 p-3 rounded-xl border text-left transition-colors ${sendNotif ? 'border-secondary-container/60 bg-secondary-container/5 dark:bg-secondary-container/10' : 'border-outline-variant dark:border-[#1e3461] bg-surface-container dark:bg-[#111f36]'}`}>
+            <div className={`relative flex-shrink-0 w-9 h-5 rounded-full transition-colors ${sendNotif ? 'bg-secondary-container' : 'bg-outline/40 dark:bg-[#2a3f66]'}`}>
+              <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${sendNotif ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
+            </div>
+            <div>
+              <p className="text-[12px] font-semibold text-on-surface dark:text-blue-50 flex items-center gap-1.5">
+                <span className="material-symbols-outlined" style={{ fontSize: 14 }}>notifications</span>
+                In-app notification
+              </p>
+              <p className="text-[11px] text-on-surface-variant dark:text-blue-200/50 mt-0.5">
+                {sendNotif ? 'Send bell notification to all members' : 'No in-app notification'}
+              </p>
+            </div>
+          </button>
+        )}
+
+        {!isEditing && (
+          <button type="button" onClick={() => { setSendEmail((v) => !v); scheduleSave({ sendEmail: !sendEmail }) }}
+            className={`sm:col-span-2 flex items-center gap-3 p-3 rounded-xl border text-left transition-colors ${sendEmail ? 'border-blue-300/60 dark:border-blue-700/40 bg-blue-50/50 dark:bg-blue-950/20' : 'border-outline-variant dark:border-[#1e3461] bg-surface-container dark:bg-[#111f36]'}`}>
+            <div className={`relative flex-shrink-0 w-9 h-5 rounded-full transition-colors ${sendEmail ? 'bg-blue-500' : 'bg-outline/40 dark:bg-[#2a3f66]'}`}>
+              <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${sendEmail ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
+            </div>
+            <div>
+              <p className="text-[12px] font-semibold text-on-surface dark:text-blue-50 flex items-center gap-1.5">
+                <span className="material-symbols-outlined" style={{ fontSize: 14 }}>mail</span>
+                Email members
+              </p>
+              <p className="text-[11px] text-on-surface-variant dark:text-blue-200/50 mt-0.5">
+                {sendEmail ? 'Send email notification to members' : 'No email will be sent'}
+              </p>
+            </div>
+          </button>
+        )}
       </div>
+
+      {/* Email audience picker — shown when email is enabled (create mode only) */}
+      {!isEditing && sendEmail && (
+        <div className="rounded-xl border border-blue-200/60 dark:border-blue-800/40 bg-blue-50/30 dark:bg-blue-950/10 p-3 space-y-2">
+          <p className="text-[11px] font-semibold text-on-surface-variant dark:text-blue-200/60 uppercase tracking-wider">Email recipients</p>
+          <div className="flex items-center gap-4">
+            <label className="flex items-center gap-2 text-[12px] cursor-pointer">
+              <input
+                type="radio"
+                checked={emailAudience === 'ALL'}
+                onChange={() => { setEmailAudience('ALL'); scheduleSave({ emailAudience: 'ALL' }) }}
+              />
+              All members
+            </label>
+            <label className="flex items-center gap-2 text-[12px] cursor-pointer">
+              <input
+                type="radio"
+                checked={emailAudience === 'SELECTED'}
+                onChange={() => { setEmailAudience('SELECTED'); scheduleSave({ emailAudience: 'SELECTED' }) }}
+              />
+              Specific members
+            </label>
+          </div>
+
+          {emailAudience === 'SELECTED' && members.length > 0 && (
+            <div className="relative" ref={emailPickerRef}>
+              <button
+                type="button"
+                onClick={() => setEmailPickerOpen((o) => !o)}
+                className="flex items-center justify-between gap-2 w-full rounded-lg border border-outline-variant dark:border-[#1e3461] bg-surface dark:bg-[#0d1729] px-3 py-2 text-[12px] text-left hover:border-primary/40 transition-colors"
+              >
+                <span className={selectedEmailMembers.size === 0 ? 'text-on-surface-variant' : 'text-on-surface dark:text-blue-50'}>
+                  {emailPickerLabel}
+                </span>
+                <span className="material-symbols-outlined text-outline" style={{ fontSize: 16 }}>
+                  {emailPickerOpen ? 'expand_less' : 'expand_more'}
+                </span>
+              </button>
+
+              {emailPickerOpen && (
+                <div className="absolute z-30 mt-1 w-full max-h-52 overflow-y-auto rounded-lg border border-outline-variant dark:border-[#1e3461] bg-surface dark:bg-[#0d1729] shadow-lg">
+                  {members.map((m) => (
+                    <label
+                      key={m.id}
+                      className="flex items-center gap-3 px-3 py-2 text-[12px] cursor-pointer hover:bg-surface-container dark:hover:bg-[#111f36] border-b border-outline-variant/30 last:border-b-0"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedEmailMembers.has(m.id)}
+                        onChange={() => toggleEmailMember(m.id)}
+                      />
+                      <span className="text-on-surface dark:text-blue-50">{m.fullName}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       <button
         type="submit"
         disabled={uploadProgress !== null && uploadProgress < 100}
         className="w-full flex items-center justify-center gap-2 rounded-xl bg-primary text-on-primary py-2.5 text-[13px] font-semibold hover:opacity-90 active:scale-95 transition-all disabled:opacity-60"
       >
-        <span className="material-symbols-outlined" style={{ fontSize: 16 }}>add</span>
-        Save event
+        <span className="material-symbols-outlined" style={{ fontSize: 16 }}>{isEditing ? 'save' : 'add'}</span>
+        {isEditing ? 'Save changes' : 'Save event'}
       </button>
     </form>
   )

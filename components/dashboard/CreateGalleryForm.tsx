@@ -7,6 +7,19 @@ import { createClient } from '@/utils/supabase/client'
 const MAX_PX    = 1200
 const MAX_BYTES = 3 * 1024 * 1024
 
+const GALLERY_CATEGORIES = [
+  'Events',
+  'Meetings',
+  'Projects',
+  'Celebrations',
+  'Community Work',
+  'Fundraising',
+  'Training',
+  'Field Visit',
+  'Members',
+  'Other',
+]
+
 type OptimisticPhoto = {
   id: string; url: string; caption?: string | null
   category?: string | null; isPublic: boolean; uploadedAt: string
@@ -66,15 +79,14 @@ export default function CreateGalleryForm({
 }: {
   onOptimisticAdd?: (photo: OptimisticPhoto) => void
 }) {
-  const [caption, setCaption]     = useState('')
-  const [category, setCategory]   = useState('')
-  const [isPublic, setIsPublic]   = useState(true)
+  const [caption, setCaption]   = useState('')
+  const [category, setCategory] = useState('')
 
-  const [uploadedUrl, setUploadedUrl]     = useState('')
-  const [pastedUrl, setPastedUrl]         = useState('')
-  const [uploadProgress, setUploadProgress] = useState<number | null>(null)
-  const [uploadError, setUploadError]     = useState('')
-  const [uploadInfo, setUploadInfo]       = useState('')
+  const [uploadedUrl, setUploadedUrl]         = useState('')
+  const [pastedUrl, setPastedUrl]             = useState('')
+  const [uploadProgress, setUploadProgress]   = useState<number | null>(null)
+  const [uploadError, setUploadError]         = useState('')
+  const [uploadInfo, setUploadInfo]           = useState('')
 
   const fileRef = useRef<HTMLInputElement>(null)
   const effectiveUrl = uploadedUrl || pastedUrl
@@ -82,9 +94,7 @@ export default function CreateGalleryForm({
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
-    setUploadError('')
-    setUploadInfo('')
-    setUploadedUrl('')
+    setUploadError(''); setUploadInfo(''); setUploadedUrl('')
     setUploadProgress(1)
     try {
       const origKb = Math.round(file.size / 1024)
@@ -101,10 +111,7 @@ export default function CreateGalleryForm({
   }
 
   function clearUpload() {
-    setUploadedUrl('')
-    setUploadInfo('')
-    setUploadError('')
-    setUploadProgress(null)
+    setUploadedUrl(''); setUploadInfo(''); setUploadError(''); setUploadProgress(null)
     if (fileRef.current) fileRef.current.value = ''
   }
 
@@ -117,7 +124,7 @@ export default function CreateGalleryForm({
       url: effectiveUrl,
       caption: caption || null,
       category: category || null,
-      isPublic,
+      isPublic: true,
       uploadedAt: new Date().toISOString(),
     })
 
@@ -125,7 +132,6 @@ export default function CreateGalleryForm({
     fd.set('url', effectiveUrl)
     fd.set('caption', caption)
     fd.set('category', category)
-    fd.set('publish', isPublic ? 'on' : 'off')
     actionCreateGallery(fd).catch(console.error)
   }
 
@@ -138,7 +144,6 @@ export default function CreateGalleryForm({
           Photo <span className="text-secondary">*</span>
         </label>
 
-        {/* Preview — uploaded file */}
         {uploadedUrl && (
           <div className="relative rounded-xl overflow-hidden border border-outline-variant dark:border-[#1e3461] aspect-video">
             <img src={uploadedUrl} alt="Preview" className="w-full h-full object-cover" />
@@ -149,7 +154,6 @@ export default function CreateGalleryForm({
           </div>
         )}
 
-        {/* Progress bar */}
         {uploadProgress !== null && uploadProgress < 100 && (
           <div className="space-y-1.5">
             <div className="flex items-center justify-between text-[11px] text-on-surface-variant dark:text-blue-200/50">
@@ -191,7 +195,6 @@ export default function CreateGalleryForm({
           </div>
         )}
 
-        {/* Pasted URL preview */}
         {pastedUrl && !uploadedUrl && (
           <div className="relative rounded-xl overflow-hidden border border-outline-variant dark:border-[#1e3461] aspect-video">
             <img src={pastedUrl} alt="Preview" className="w-full h-full object-cover"
@@ -223,47 +226,41 @@ export default function CreateGalleryForm({
           <label className="block text-[11px] font-semibold text-on-surface-variant dark:text-blue-200/60 uppercase tracking-wider">Caption</label>
           <div className="flex items-center gap-2 rounded-xl border border-outline-variant dark:border-[#1e3461] bg-surface-container dark:bg-[#111f36] px-3 py-2.5 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all">
             <input
-              placeholder="e.g. Family gathering"
+              placeholder="e.g. Annual general meeting"
               value={caption} onChange={(e) => setCaption(e.target.value)}
               className="flex-1 bg-transparent outline-none text-[13px] text-on-surface dark:text-blue-50 placeholder:text-outline dark:placeholder:text-blue-200/30"
             />
           </div>
         </div>
 
-        {/* Category */}
+        {/* Category — dropdown */}
         <div className="space-y-1">
           <label className="block text-[11px] font-semibold text-on-surface-variant dark:text-blue-200/60 uppercase tracking-wider">Category</label>
-          <div className="flex items-center gap-2 rounded-xl border border-outline-variant dark:border-[#1e3461] bg-surface-container dark:bg-[#111f36] px-3 py-2.5 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all">
-            <input
-              placeholder="e.g. Events, Projects"
-              value={category} onChange={(e) => setCategory(e.target.value)}
-              className="flex-1 bg-transparent outline-none text-[13px] text-on-surface dark:text-blue-50 placeholder:text-outline dark:placeholder:text-blue-200/30"
-            />
+          <div className="relative rounded-xl border border-outline-variant dark:border-[#1e3461] bg-surface-container dark:bg-[#111f36] focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all">
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="w-full appearance-none bg-transparent outline-none text-[13px] text-on-surface dark:text-blue-50 px-3 py-2.5 pr-8 cursor-pointer"
+            >
+              <option value="">Select category…</option>
+              {GALLERY_CATEGORIES.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+            <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 material-symbols-outlined text-outline dark:text-blue-200/40" style={{ fontSize: 16 }}>
+              expand_more
+            </span>
           </div>
         </div>
       </div>
 
-      {/* Publish toggle */}
-      <button
-        type="button"
-        onClick={() => setIsPublic((v) => !v)}
-        className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-colors ${
-          isPublic ? 'border-primary/40 bg-primary/5 dark:bg-primary/10' : 'border-outline-variant dark:border-[#1e3461] bg-surface-container dark:bg-[#111f36]'
-        }`}
-      >
-        <div className={`relative flex-shrink-0 w-9 h-5 rounded-full transition-colors ${isPublic ? 'bg-primary' : 'bg-outline/40 dark:bg-[#2a3f66]'}`}>
-          <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${isPublic ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
-        </div>
-        <div>
-          <p className="text-[12px] font-semibold text-on-surface dark:text-blue-50 flex items-center gap-1.5">
-            <span className="material-symbols-outlined" style={{ fontSize: 14 }}>public</span>
-            Publish to public gallery
-          </p>
-          <p className="text-[11px] text-on-surface-variant dark:text-blue-200/50 mt-0.5">
-            {isPublic ? 'Visible on the public gallery page' : 'Only visible to organisers'}
-          </p>
-        </div>
-      </button>
+      {/* Info badge — always public */}
+      <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
+        <span className="material-symbols-outlined text-green-600 dark:text-green-400 flex-shrink-0" style={{ fontSize: 15 }}>public</span>
+        <p className="text-[11px] text-green-700 dark:text-green-400 font-medium">
+          Published to public gallery · Members will see this in their notifications
+        </p>
+      </div>
 
       <button
         type="submit"

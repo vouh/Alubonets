@@ -25,7 +25,7 @@ function baseHtml(body: string) {
 </div></body></html>`
 }
 
-// Sends an email to every active member in batches of 100
+// Sends an email to active members (all, or a specific subset by ID)
 export async function sendBroadcastEmail({
   subject,
   title,
@@ -34,6 +34,7 @@ export async function sendBroadcastEmail({
   ctaUrl,
   template,
   actorId,
+  memberIds,
 }: {
   subject: string
   title: string
@@ -42,10 +43,14 @@ export async function sendBroadcastEmail({
   ctaUrl?: string
   template: string
   actorId?: string
+  memberIds?: string[] // if provided, only these members receive the email
 }) {
   const resend = getResend()
+  const where = memberIds?.length
+    ? { id: { in: memberIds }, status: 'ACTIVE' as const }
+    : { status: 'ACTIVE' as const }
   const members = await prisma.user.findMany({
-    where: { status: 'ACTIVE' },
+    where,
     select: { id: true, email: true, fullName: true },
   })
 
