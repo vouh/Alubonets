@@ -59,12 +59,9 @@ export default function OrganizerProjectsClient({
 
       {/* Header */}
       <div className="flex items-center justify-between gap-3">
-        <div>
-          <h1 className="text-[16px] font-bold text-on-surface dark:text-blue-50">Projects</h1>
-          <p className="text-[12px] text-on-surface-variant dark:text-blue-200/50 mt-0.5">
-            {localProjects.length} project{localProjects.length !== 1 ? 's' : ''}
-          </p>
-        </div>
+        <p className="text-[12px] text-on-surface-variant dark:text-blue-200/50">
+          {localProjects.length} project{localProjects.length !== 1 ? 's' : ''}
+        </p>
         <button
           onClick={openCreate}
           className="flex items-center gap-2 rounded-xl bg-primary text-on-primary px-4 py-2 text-[13px] font-semibold hover:opacity-90 active:scale-95 transition-all shadow-sm"
