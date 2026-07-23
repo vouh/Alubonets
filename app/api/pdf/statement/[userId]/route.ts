@@ -25,6 +25,7 @@ export async function GET(
 
   const user = await prisma.user.findUnique({ where: { id: userId } })
   if (!user) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  const { fullName, email } = user
 
   const sp        = req.nextUrl.searchParams
   const startStr  = sp.get('startDate') ?? ''
@@ -63,8 +64,8 @@ export async function GET(
     pg.drawText('Member Contribution Statement', { x: MARGIN, y: PAGE_H - 50, size: 10, font, color: rgb(0.8, 0.85, 1) })
 
     // Member info
-    pg.drawText(user.fullName,  { x: MARGIN, y: PAGE_H - 90,  size: 12, font: bold,  color: BLUE })
-    pg.drawText(user.email,     { x: MARGIN, y: PAGE_H - 106, size: 9,  font,        color: GREY })
+    pg.drawText(fullName,  { x: MARGIN, y: PAGE_H - 90,  size: 12, font: bold,  color: BLUE })
+    pg.drawText(email,     { x: MARGIN, y: PAGE_H - 106, size: 9,  font,        color: GREY })
     pg.drawText(`Period: ${periodLabel}`, { x: MARGIN, y: PAGE_H - 120, size: 9, font, color: GREY })
 
     // Total
