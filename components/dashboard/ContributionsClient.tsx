@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import MemberContributeModal from './MemberContributeModal'
 
 type Contribution = {
   id: string
@@ -197,12 +198,15 @@ export default function ContributionsClient({
       {/* Table */}
       <section className="rounded-2xl border border-outline-variant bg-surface-container-lowest overflow-hidden">
         <div className="px-4 py-3 border-b border-outline-variant bg-surface-container-low flex items-center justify-between">
-          <h2 className="font-label-bold text-sm text-on-surface">Contribution history</h2>
-          {isFiltered && (
-            <span className="text-[11px] text-on-surface-variant">
-              {filtered.length} record{filtered.length !== 1 ? 's' : ''}
-            </span>
-          )}
+          <div className="flex items-center gap-3">
+            <h2 className="font-label-bold text-sm text-on-surface">Contribution history</h2>
+            {isFiltered && (
+              <span className="text-[11px] text-on-surface-variant">
+                {filtered.length} record{filtered.length !== 1 ? 's' : ''}
+              </span>
+            )}
+          </div>
+          <MemberContributeModal />
         </div>
 
         {filtered.length === 0 ? (
@@ -217,7 +221,6 @@ export default function ContributionsClient({
                   <th className="py-3 px-4 font-label-bold">Date</th>
                   <th className="py-3 px-4 font-label-bold">Amount</th>
                   <th className="py-3 px-4 font-label-bold">Category</th>
-                  <th className="py-3 px-4 font-label-bold">Receipt</th>
                 </tr>
               </thead>
               <tbody>
@@ -233,14 +236,6 @@ export default function ContributionsClient({
                       KES {c.amount.toLocaleString()}
                     </td>
                     <td className="py-3 px-4">{c.category || '—'}</td>
-                    <td className="py-3 px-4">
-                      <a
-                        href={`/api/pdf/receipt/${c.id}`}
-                        className="text-secondary-container font-label-bold underline hover:opacity-80 transition-opacity"
-                      >
-                        PDF
-                      </a>
-                    </td>
                   </tr>
                 ))}
               </tbody>
